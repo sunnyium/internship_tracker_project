@@ -32,20 +32,12 @@ def init_db():
     conn.close()
 
 
-def is_new(job_id: str) -> bool:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.execute("SELECT 1 FROM seen_jobs WHERE job_id = ?", (job_id,))
-    row = cur.fetchone()
-    conn.close()
-    return row is None
-
-
 def all_seen_ids() -> set:
     """Every job_id on record, in one query.
 
-    A round examines tens of thousands of postings, and calling is_new() for
-    each one opens, queries and closes a separate connection every time. Load
-    the set once per round and check membership in memory instead - the table
+    A round examines tens of thousands of postings. Querying the database for
+    each one would open, query and close a separate connection every time, so
+    load the set once per round and check membership in memory instead - the table
     is small enough (a few thousand rows of short strings) that holding it is
     free, and it turns the hottest path in the sweep into a hash lookup.
     """

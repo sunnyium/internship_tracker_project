@@ -319,5 +319,5 @@ raised and the round exits 1.
 
 `--skip-github` turns this half off for one run without touching any config.
 
-Still worth doing: add `data/github_jobs.db` to `.gitignore` next to
-`data/seen_jobs.db`. It is per-machine notification history for the same reason.
+`data/github_jobs.db` is per-machine notification history, like
+`data/seen_jobs.db`, and the `*.db` rule in `.gitignore` keeps both out of git.
