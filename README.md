@@ -168,7 +168,7 @@ Options, all optional, settable globally in `config/config.yaml` or per source:
 | Option | What it's for |
 |---|---|
 | `wait_for_selector` | CSS selector to wait for - the most reliable "the list has arrived" signal |
-| `wait_after_load_ms` | Grace period after the page settles (default 4000) |
+| `wait_after_load_ms` | Extra wait after the page settles (default 4000). Only applied when `wait_for_selector` is set, when job links never appeared, or when a source sets it itself |
 | `timeout_ms` | Page-load timeout (default 30000) |
 | `scroll_times` | Scroll to the bottom N times, for lists that lazy-load as you scroll |
 | `click_selector` + `max_clicks` | Click a "Load more" button up to N times |
@@ -182,7 +182,11 @@ a site's job URLs don't look job-shaped at all: Meta's are
 `/profile/job_details/<id>` and TikTok's are `/search/<id>`, neither of which
 any sane default would match.
 
-**Cost:** rendering takes ~10s per source versus milliseconds for a plain
+**Cost:** a render now stops as soon as job-shaped links (or `list_selector`
+cards) have appeared and stopped multiplying for 1.5s, and skips images, fonts
+and video. It used to wait for the network to go quiet, which analytics-heavy
+career sites never do, so most renders sat out the full 30s timeout plus 4s.
+Rendering is still seconds per source versus milliseconds for a plain
 request, which is why it's ordered last and why one Chromium process is shared
 by every source in a round (then closed between rounds). With many rendered
 sources a full sweep can exceed `poll_interval_seconds`; rounds then run
@@ -366,9 +370,12 @@ on Windows ARM64 the Chromium build runs under x64 emulation, which isn't fast.
 Raising `max_fetch_workers` will not help — the concurrent phase is already the
 cheap part.
 
-The first sweep after widening `max_posting_age_hours` to a week takes longer
-still, because far more postings survive the age filter and reach the
-classifier.
+Every round now logs how long the HTTP phase and the browser phase took, and
+the ten slowest sources - the place to look when a round runs long.
+
+The first round after updating to the "record every posting as seen" change
+writes every old posting the age filter used to hide into `seen_jobs.db` in
+one go. It sends nothing for them and is a one-off.
 
 If that ever needs to come down, the lever is the 33 rendered sources, not the
 concurrency: converting `rendering.py` to Playwright's async API would let

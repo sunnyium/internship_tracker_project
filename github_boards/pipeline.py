@@ -294,7 +294,9 @@ def _process_repos(repo_cfgs, settings, matches, dry_run, fetched,
             print(f"[{name}] Unchanged since last round, nothing to do.")
             continue
 
-        jobs = [_prepare(j, repo_cfg) for j in jobs if _is_recent(j, max_age_days)]
+        # Every row is recorded, not just recent ones: a row left unrecorded
+        # because it was old would look new the day a list re-dated it.
+        jobs = [_prepare(j, repo_cfg) for j in jobs]
 
         if name not in baselined:
             if not dry_run:
@@ -311,10 +313,21 @@ def _process_repos(repo_cfgs, settings, matches, dry_run, fetched,
             _store_etags(etag_updates, dry_run)
             continue
 
+        unseen = [j for j in jobs if j["id"] not in seen_ids]
+        old = [j for j in unseen if not _is_recent(j, max_age_days)]
+        if old:
+            if not dry_run:
+                state.mark_seen_many(
+                    (j["id"], name, j.get("company", ""), j["title"], j["url"]) for j in old
+                )
+            seen_ids.update(j["id"] for j in old)
+            for j in old:
+                known.add(j, with_text=not _clearly_abroad(j))
+
         new_count = 0
         match_count = 0
         repeat_count = 0
-        for job in jobs:
+        for job in unseen:
             if job["id"] in seen_ids:
                 continue
             if not dry_run:
@@ -349,7 +362,8 @@ def _process_repos(repo_cfgs, settings, matches, dry_run, fetched,
                 print(f"[{name}] Not relevant: {job['title']} ({reason})")
 
         known.flush()
-        print(f"[{name}] {len(jobs)} posting(s) in window, {new_count} new, "
+        print(f"[{name}] {len(jobs)} posting(s) listed, {new_count} new in the last "
+              f"{max_age_days} day(s), "
               f"{match_count} relevant"
               + (f", {repeat_count} already seen elsewhere" if repeat_count else "")
               + f" ({note})")

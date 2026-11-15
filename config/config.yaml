@@ -157,10 +157,11 @@ browser_rendering:
   # Defaults for every rendered page; any source in companies.yaml can
   # override these individually.
   timeout_ms: 30000
-  # Extra grace period after the page settles - job lists often arrive in a
-  # second request fired once the JS framework has mounted. 2500 was tested
-  # and found too tight (Atlassian's list intermittently lost the race);
-  # raise it for a specific source if that source keeps coming up empty.
+  # Extra wait after the page settles. Renders normally finish as soon as the
+  # job links have appeared and stopped multiplying, and this is skipped; it
+  # still applies when a source uses wait_for_selector, when no job links
+  # ever appear, or when a source sets its own value (do that for a site whose
+  # list arrives in batches more than 1.5s apart).
   wait_after_load_ms: 4000
   # Scroll to the bottom this many times, for sites that lazy-load more jobs
   # as you scroll. 0 = don't scroll.

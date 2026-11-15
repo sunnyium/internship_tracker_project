@@ -20,7 +20,6 @@ from tracker.sources.common import (
     parse_epoch_millis,
     parse_iso,
     parse_workday_posted_on,
-    strip_html,
 )
 
 
@@ -38,7 +37,10 @@ def fetch_greenhouse(cfg):
             "url": j.get("absolute_url", ""),
             "company": cfg.get("name", slug),
             "location": (j.get("location") or {}).get("name", ""),
-            "description": strip_html(j.get("content", ""))[:2000],
+            # Raw HTML, turned into text only if the posting turns out to be
+            # new (pipeline._ensure_description).
+            "description": "",
+            "description_html": j.get("content", ""),
             # Greenhouse doesn't expose a separate "first posted" date via
             # this endpoint - updated_at is the closest available signal.
             "posted_at": parse_iso(j.get("updated_at")),
@@ -54,14 +56,17 @@ def fetch_lever(cfg):
     data = r.json()
     jobs = []
     for j in data:
-        desc = strip_html(j.get("descriptionPlain") or j.get("description", ""))
+        # descriptionPlain is already text; only the HTML fallback needs
+        # parsing, and that waits until the posting is known to be new.
+        plain = j.get("descriptionPlain") or ""
         jobs.append({
             "id": f"lever:{slug}:{j['id']}",
             "title": j.get("text", ""),
             "url": j.get("hostedUrl", ""),
             "company": cfg.get("name", slug),
             "location": (j.get("categories") or {}).get("location", ""),
-            "description": desc[:2000],
+            "description": plain[:2000],
+            "description_html": "" if plain else j.get("description", ""),
             "posted_at": parse_epoch_millis(j.get("createdAt")),
         })
     return jobs
@@ -95,37 +100,54 @@ def fetch_ashby(cfg):
     return jobs
 
 
+# Searched one after another and merged. Workday's search matches words, so
+# "intern" alone can miss titles that only say "Internship" or "Co-op".
+WORKDAY_QUERIES = ("intern", "internship", "co-op")
+WORKDAY_PAGE_SIZE = 20
+WORKDAY_MAX_PAGES = 25
+
+
 def fetch_workday(cfg):
+    """Workday boards, searched for internships rather than read in full.
+
+    Reading the whole board stopped after 10 pages of 20, so at a bank or
+    insurer with thousands of openings anything past the newest 200 was never
+    seen. Searching returns only the internship-shaped postings, usually in
+    a page or two per query. Set `search_queries` on a source to override."""
     tenant = cfg["tenant"]
     site = cfg["site"]
     host = cfg.get("host", "wd1")
     url = f"https://{tenant}.{host}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs"
+    queries = cfg.get("search_queries") or WORKDAY_QUERIES
     jobs = []
-    offset = 0
-    limit = 20
-    for _ in range(10):  # cap pagination so one misbehaving source can't loop forever
-        r = requests.post(
-            url, headers={**HEADERS, "Content-Type": "application/json"},
-            json={"limit": limit, "offset": offset, "searchText": ""},
-            timeout=TIMEOUT,
-        )
-        r.raise_for_status()
-        data = r.json()
-        postings = data.get("jobPostings", [])
-        if not postings:
-            break
-        for p in postings:
-            path = p.get("externalPath", "")
-            jobs.append({
-                "id": f"workday:{tenant}:{path}",
-                "title": p.get("title", ""),
-                "url": f"https://{tenant}.{host}.myworkdayjobs.com/{site}{path}",
-                "company": cfg.get("name", tenant),
-                "location": p.get("locationsText", ""),
-                "description": "",  # Workday list endpoint doesn't include full descriptions
-                "posted_at": parse_workday_posted_on(p.get("postedOn")),
-            })
-        offset += limit
-        if len(postings) < limit:
-            break
+    seen_paths = set()
+    for query in queries:
+        offset = 0
+        for _ in range(WORKDAY_MAX_PAGES):  # cap so one misbehaving source can't loop forever
+            r = requests.post(
+                url, headers={**HEADERS, "Content-Type": "application/json"},
+                json={"limit": WORKDAY_PAGE_SIZE, "offset": offset, "searchText": query},
+                timeout=TIMEOUT,
+            )
+            r.raise_for_status()
+            postings = r.json().get("jobPostings", [])
+            if not postings:
+                break
+            for p in postings:
+                path = p.get("externalPath", "")
+                if path in seen_paths:
+                    continue
+                seen_paths.add(path)
+                jobs.append({
+                    "id": f"workday:{tenant}:{path}",
+                    "title": p.get("title", ""),
+                    "url": f"https://{tenant}.{host}.myworkdayjobs.com/{site}{path}",
+                    "company": cfg.get("name", tenant),
+                    "location": p.get("locationsText", ""),
+                    "description": "",  # Workday list endpoint doesn't include full descriptions
+                    "posted_at": parse_workday_posted_on(p.get("postedOn")),
+                })
+            offset += WORKDAY_PAGE_SIZE
+            if len(postings) < WORKDAY_PAGE_SIZE:
+                break
     return jobs

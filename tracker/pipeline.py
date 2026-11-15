@@ -30,6 +30,7 @@ never per source and never per batch. See _run_once.
 """
 
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 
@@ -37,9 +38,23 @@ import seen_index
 from tracker import classifier, notifiers, sources, state
 from tracker.filters import degree, location, term
 from tracker.sources import rendering
+from tracker.sources.common import strip_html
 
 # Fallback when config.yaml doesn't set max_fetch_workers.
 DEFAULT_FETCH_WORKERS = 10
+
+# How many of the slowest sources to name in the log after each round.
+SLOWEST_SOURCES_SHOWN = 10
+
+
+def _timed_fetch(source_cfg):
+    """(jobs, seconds, error) - timed on the worker thread itself, so a
+    source's time is its own and not time spent queued behind others."""
+    start = time.monotonic()
+    try:
+        return sources.fetch_all_jobs(source_cfg), time.monotonic() - start, None
+    except Exception as e:
+        return [], time.monotonic() - start, e
 
 
 def is_recent(job, max_age_hours):
@@ -75,10 +90,22 @@ def _clearly_abroad(job):
     return bool(location.foreign_country_in_title(job.get("title", "")))
 
 
+def _ensure_description(job):
+    """Turn a fetcher's raw HTML description into text, now that the posting
+    is known to be new. Done here rather than in the fetcher because the
+    fetchers return tens of thousands of postings a round and nearly all of
+    them are already seen - parsing every description up front was CPU spent
+    on postings thrown away a moment later."""
+    raw = job.pop("description_html", None)
+    if raw and not job.get("description"):
+        job["description"] = strip_html(raw)[:2000]
+
+
 def process_job(job, cfg, ai_api_key):
     """Returns (should_notify, reason) for a single new job. reason is
     always populated - either why it was flagged relevant, or why it
     wasn't, so callers can log both cases."""
+    _ensure_description(job)
     title = job["title"]
     desc = job.get("description", "")
 
@@ -157,8 +184,9 @@ def _run_once(cfg, ai_api_key, notify=True):
     return matches
 
 
-def _fetch_in_parallel(indexed_cfgs, workers):
-    """Fetch many sources at once. Returns {index: (jobs, error)}.
+def _fetch_in_parallel(indexed_cfgs, workers, timings):
+    """Fetch many sources at once. Returns {index: (jobs, error)}, and
+    records each source's seconds in `timings`.
 
     Browser rendering is switched OFF for the duration. Playwright's sync API
     is not thread-safe - driving one shared Chromium from a pool of threads
@@ -171,13 +199,12 @@ def _fetch_in_parallel(indexed_cfgs, workers):
     rendering.BROWSER_OPTIONS["enabled"] = False
     try:
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            pending = {pool.submit(sources.fetch_all_jobs, c): i for i, c in indexed_cfgs}
+            pending = {pool.submit(_timed_fetch, c): i for i, c in indexed_cfgs}
             for future in as_completed(pending):
                 index = pending[future]
-                try:
-                    results[index] = (future.result(), None)
-                except Exception as e:
-                    results[index] = ([], e)
+                jobs, seconds, error = future.result()
+                results[index] = (jobs, error)
+                timings[index] = seconds
     finally:
         rendering.BROWSER_OPTIONS["enabled"] = was_enabled
     return results
@@ -201,8 +228,11 @@ def _fetch_sources(source_cfgs, workers):
     explicit_browser = [i for i, c in enumerate(source_cfgs) if c.get("type") == "browser"]
     parallel = [(i, c) for i, c in enumerate(source_cfgs) if c.get("type") != "browser"]
 
+    timings = {}
     print(f"Fetching {len(parallel)} source(s), {workers} at a time...")
-    results = _fetch_in_parallel(parallel, workers)
+    phase_start = time.monotonic()
+    results = _fetch_in_parallel(parallel, workers, timings)
+    print(f"HTTP phase: {(time.monotonic() - phase_start) / 60:.1f} min")
 
     needs_browser = list(explicit_browser)
     if rendering.browser_enabled():
@@ -214,13 +244,16 @@ def _fetch_sources(source_cfgs, workers):
         ]
 
     if needs_browser:
-        print(f"Rendering {len(needs_browser)} source(s) that need a real browser (~10s each)...")
+        print(f"Rendering {len(needs_browser)} source(s) that need a real browser...")
+        phase_start = time.monotonic()
         for index in needs_browser:
-            source_cfg = source_cfgs[index]
-            try:
-                results[index] = (sources.fetch_all_jobs(source_cfg), None)
-            except Exception as e:
-                results[index] = ([], e)
+            jobs, seconds, error = _timed_fetch(source_cfgs[index])
+            results[index] = (jobs, error)
+            # An auto source that fell back here paid for both attempts.
+            timings[index] = timings.get(index, 0) + seconds
+        print(f"Browser phase: {(time.monotonic() - phase_start) / 60:.1f} min")
+
+    _print_slowest(source_cfgs, timings)
 
     # Anything never attempted (explicit browser sources when rendering is off)
     # still needs an entry so the caller can iterate without checking.
@@ -229,6 +262,19 @@ def _fetch_sources(source_cfgs, workers):
             "type: browser source skipped - browser rendering is unavailable"
         )))
     return results
+
+
+def _print_slowest(source_cfgs, timings):
+    """The sources that cost the most this round - where to look first when
+    a round runs long (a dead site timing out, an auto source that keeps
+    falling through to the browser)."""
+    if not timings:
+        return
+    slowest = sorted(timings.items(), key=lambda kv: kv[1], reverse=True)[:SLOWEST_SOURCES_SHOWN]
+    print("Slowest sources this round:")
+    for index, seconds in slowest:
+        cfg = source_cfgs[index]
+        print(f"  {seconds:5.1f}s  {cfg.get('name', cfg['type'])} ({cfg['type']})")
 
 
 def _collect_matches(cfg, ai_api_key, matches):
@@ -272,12 +318,12 @@ def _process_sources(cfg, ai_api_key, matches, source_cfgs, fetched,
             print(f"[{name}] Fetch failed, skipping this round: {error}")
             continue
 
-        jobs = [j for j in jobs if is_recent(j, max_age_hours)]
-
         # First time we've successfully reached this source: everything it
         # currently lists is "pre-existing", not new. Record it as seen
         # without notifying, so only postings that appear after this point
-        # ever trigger an alert.
+        # ever trigger an alert. Every posting, not just recent ones: an old
+        # posting left unrecorded would look new the day its date moves into
+        # the window (Greenhouse's date is "last updated", so any edit does it).
         if name not in baselined:
             state.mark_seen_many(
                 (job["id"], name, job["title"], job["url"]) for job in jobs
@@ -290,10 +336,21 @@ def _process_sources(cfg, ai_api_key, matches, source_cfgs, fetched,
             print(f"[{name}] First check - recorded {len(jobs)} existing posting(s) as baseline, won't notify for these.")
             continue
 
+        unseen = [j for j in jobs if j["id"] not in seen_ids]
+        # Too old to send, but recorded all the same, for the reason above -
+        # in one transaction, since the first round after this change finds
+        # every old posting the age filter used to hide.
+        old = [j for j in unseen if not is_recent(j, max_age_hours)]
+        if old:
+            state.mark_seen_many((j["id"], name, j["title"], j["url"]) for j in old)
+            seen_ids.update(j["id"] for j in old)
+            for j in old:
+                known.add(j, with_text=not _clearly_abroad(j))
+
         new_count = 0
         match_count = 0
         repeat_count = 0
-        for job in jobs:
+        for job in unseen:
             if job["id"] in seen_ids:
                 continue
             # Mark seen immediately so a crash mid-loop can't cause repeat spam
@@ -334,7 +391,8 @@ def _process_sources(cfg, ai_api_key, matches, source_cfgs, fetched,
         # available by turning verbose_logging on in config.yaml.
         known.flush()
         if new_count or repeat_count:
-            print(f"[{name}] {len(jobs)} posting(s) in window, {new_count} new, {match_count} relevant"
+            print(f"[{name}] {len(jobs)} posting(s) listed, {new_count} new in the last "
+                  f"{max_age_hours}h, {match_count} relevant"
                   + (f", {repeat_count} already seen elsewhere" if repeat_count else ""))
 
 
