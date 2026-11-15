@@ -1,0 +1,11 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+PyYAML>=6.0
+python-dotenv>=1.0.0
+
+# Headless browser, for career pages that render their job list with
+# JavaScript. Needs a one-time browser download after pip install:
+#     playwright install chromium
+# Optional: without it, plain-HTTP sources still work and JS-rendered ones
+# report a clear error telling you to install it.
+playwright>=1.40.0

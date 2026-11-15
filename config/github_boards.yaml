@@ -1,0 +1,481 @@
+# =============================================================================
+# GitHub Job-Board Watcher - repositories and settings
+# =============================================================================
+#
+# Read only by github_boards/ and run_github_boards.py. Nothing in tracker/
+# touches this file, and this file never names a company career page - the
+# two halves of the project are deliberately independent.
+#
+# Each entry under `repos` describes one crowdsourced internship list living
+# in a GitHub repository. The `strategy` says how that repo stores its jobs:
+#
+#   json      a machine-readable listings file (the Simplify/vanshb03 schema)
+#   markdown  GitHub-flavoured tables inside .md files
+#   yaml_dir  one YAML file per company in a directory
+#   auto      try the known json paths, then fall back to markdown on README.md
+#
+# Per-repo keys, all optional unless noted:
+#
+#   name                     what shows up in notifications and the database
+#   repo                     "owner/name" (required)
+#   strategy                 one of the four above (required)
+#   branch                   defaults to HEAD, which follows the default branch
+#   paths                    files to read, in order; defaults per strategy
+#   dir                      yaml_dir only - directory holding the YAML files
+#   require_internship_title turn off for lists of programs/fellowships whose
+#                            titles don't contain the word "intern"
+#   keyword_match            turn off for lists that are already entirely
+#                            on-topic (AI-only, quant-only), where requiring a
+#                            keyword would drop good roles for phrasing reasons
+#   max_files                yaml_dir only - cap on how many files to pull
+
+settings:
+  # Postings older than this are ignored where the repo publishes a date.
+  # Rows with no parseable date are KEPT - same fail-open rule the rest of the
+  # project runs on. 14 rather than the tracker's 7 because these lists are
+  # curated by hand and an entry can show up days after the job went live.
+  max_posting_age_days: 14
+
+  # Repos fetched at the same time. Small on purpose: one of these files is
+  # 10MB, and all of them come from two hosts (raw.githubusercontent.com and
+  # api.github.com).
+  max_fetch_workers: 4
+
+  # Log every posting that was examined and rejected, not just a per-repo
+  # summary. Useful when tuning keywords; far too noisy for scheduled runs.
+  verbose_logging: false
+
+  # Same fields of interest the career-page tracker uses: Data Science,
+  # Computational and Applied Mathematics, Computer Science, Statistics, plus
+  # AI/ML, cybersecurity, finance and analyst work. These lists carry a title
+  # and a location and nothing else, so there is no description to fall back
+  # on - the list is a little wider than config.yaml's for that reason.
+  keywords:
+    - "data science"
+    - "data scientist"
+    - "data analyst"
+    - "data engineer"
+    - "data"
+    - "analytics"
+    - "analyst"
+    - "machine learning"
+    - "artificial intelligence"
+    - "ai/ml"
+    - " ai "
+    - "ml engineer"
+    - "deep learning"
+    - "llm"
+    - "nlp"
+    - "computer vision"
+    - "research"
+    - "algorithm"
+    - "software engineer"
+    - "software engineering"
+    - "software developer"
+    - "computer science"
+    - "mathematics"
+    - "statistics"
+    - "statistical"
+    - "quant"
+    - "quantitative"
+    - "trading"
+    - "trader"
+    - "finance"
+    - "financial"
+    - "risk"
+    - "actuarial"
+    - "cybersecurity"
+    - "cyber security"
+    - "security"
+    - "business intelligence"
+    - "business analyst"
+
+  internship_title_hints:
+    - "intern"
+    - "internship"
+    - "co-op"
+    - "coop"
+    - "student researcher"
+    - "student research"
+    - "summer analyst"
+    - "student"
+
+  location_filter:
+    enabled: true
+    allowed_regions: ["US", "CA"]
+
+  degree_filter:
+    enabled: true
+
+  # Excludes postings that EXPLICITLY name a cycle not in this list (Fall,
+  # Winter, Spring) and never mention an allowed one anywhere in the title,
+  # notes or the repo's own term/season column. Not naming a season at all
+  # is KEPT - fail-open, same as everything else here. A bare season word in
+  # free text only counts next to a year, so office locations like "Fall
+  # River, MA" can't trip this; a structured term column is trusted as-is.
+  term_filter:
+    enabled: true
+    allowed_terms: ["summer"]
+
+  # Drops postings that state a US-citizenship or security-clearance
+  # requirement. Unlike every other filter here this one fails CLOSED, because
+  # it is the one constraint in the candidate profile that is truly binary -
+  # a Canadian citizen on an F-1 cannot take a cleared role at any price.
+  citizenship_filter:
+    enabled: true
+
+notifications:
+  email:
+    enabled: true
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    # Credentials come from .env (EMAIL_FROM_ADDRESS, EMAIL_APP_PASSWORD,
+    # EMAIL_TO_ADDRESS) - the same three the career-page tracker uses.
+
+  ntfy:
+    enabled: true
+    # Deliberately the same topic the career-page tracker publishes to, so one
+    # phone subscription covers both. Message titles are prefixed "GitHub
+    # boards" so it stays obvious which half sent what.
+    topic: "sunny-intern-alerts-k4mq7wz2xr9t"
+    server: "https://ntfy.sh"
+    # Fires every round: a digest when there are matches, a quiet low-priority
+    # heartbeat when there aren't, so silence means something broke.
+    heartbeat: true
+
+# -----------------------------------------------------------------------------
+# The repositories
+# -----------------------------------------------------------------------------
+# Chosen against docs/CANDIDATE_PROFILE.md: undergraduate, Summer 2027, US and
+# Canada, AI/ML first, then data science and analytics, then quant and finance,
+# with Canadian programs called out as a specific plus rather than a fallback.
+# Star counts and freshness were checked on 2026-08-09; see
+# docs/GITHUB_BOARDS.md for why each one is here.
+
+repos:
+  # ===========================================================================
+  # 1. Overall lists - broad US coverage, every field
+  # ===========================================================================
+  - name: "Simplify Summer 2027"
+    repo: "SimplifyJobs/Summer2027-Internships"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+
+  - name: "vanshb03 Summer 2027"
+    repo: "vanshb03/Summer2027-Internships"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+
+  - name: "SpeedyApply SWE 2027"
+    repo: "speedyapply/2027-SWE-College-Jobs"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Zapply Internships 2027"
+    repo: "zapplyjobs/Internships-2027"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Internship Engine 2027"
+    repo: "zshah101/Automated-List-Of-Summer-2027-and-Fall-2026-Tech-Internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "sndsh404 Summer 2027"
+    repo: "sndsh404/summer-2027-internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  # The largest list configured by a wide margin - roughly 17,000 rows, and
+  # despite the ECE in its name the contents are general tech.
+  - name: "Cornell IEEE 2026"
+    repo: "IEEEAtCornell/2026-ECE-Internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Surya internship tracker"
+    repo: "SuryaHarikrishnan/internship-tracker"
+    strategy: json
+    paths: ["data/listings.json"]
+
+  - name: "aprameyak 2027 tech jobs"
+    repo: "aprameyak/2027-tech-jobs"
+    strategy: json
+    paths: ["listings.json"]
+
+  - name: "Chieler Summer 2027 SWE"
+    repo: "Chieler/Summer-2027-SWE-Internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "DereC4 internships"
+    repo: "DereC4/internships-and-newgrad"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Southeast tech internships"
+    repo: "ctsc/southeast-tech-internships-2026-2027"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Dreamwork Tech 2027"
+    repo: "dreamworkhq/Tech-Internships-2027"
+    strategy: json
+    paths: ["data/listings.json"]
+
+  - name: "ForgeApply internships"
+    repo: "forgeapply/internships-and-new-grad-jobs"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "ApplyGuy 2027"
+    repo: "ApplyGuy/2027-Internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  # Mostly European, kept because the ~100 US rows in it are AI, data and
+  # security roles the bigger lists are slower to pick up. The location filter
+  # handles the rest.
+  - name: "Resumax tech internships"
+    repo: "resumax/tech-internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Summer 2026 curated US"
+    repo: "summer2026internships/Summer2026-Internships"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+
+  - name: "Edamame 2027"
+    repo: "Edamame-Labs/2027-internship-jobs"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "NYC internships"
+    repo: "kazisean/nyc-internship-2026"
+    strategy: markdown
+    # Lowercase "adme". raw.githubusercontent is case-sensitive, so README.md
+    # 404s here and the default would find nothing.
+    paths: ["Readme.md"]
+
+  - name: "michae1lm cyber/SWE 2027"
+    repo: "michae1lm/Summer-2027-Internships-Jobs"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Tailed tech internships"
+    repo: "tailed-community/tech-internships-2025-2026"
+    strategy: markdown
+    paths: ["README.md"]
+
+  # Big tech only, which is the employer profile in the candidate document -
+  # large, well known, structured programs.
+  - name: "FAANG 2027 tracker"
+    repo: "Emjumaev/FAANG-2027-Internships-Tracker"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "North America internships"
+    repo: "jerrylin-23/North-America-internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  # Off-season terms. Sunny's stated constraint is Summer 2027, but a spring or
+  # winter co-op is the kind of thing worth seeing rather than never hearing
+  # about, and the filters treat it like anything else.
+  - name: "Spring off-season internships"
+    repo: "dubiels/spring-2026-internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "internatlas 2027"
+    repo: "sonak11/internatlas"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Cybersecurity 2027 jobs"
+    repo: "HackedRico/2027-cyber-jobs"
+    strategy: json
+    paths: ["listings.json"]
+
+  - name: "michelleokolie Canada tech 2027"
+    repo: "michelleokolie/canada-tech-internships-summer-2027"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+
+  # ===========================================================================
+  # 2. Field-specific - the ranked lanes from the candidate profile
+  # ===========================================================================
+  - name: "SpeedyApply AI 2027"
+    repo: "speedyapply/2027-AI-College-Jobs"
+    strategy: markdown
+    paths: ["README.md"]
+    # Every row in this repo is already an AI/ML role.
+    keyword_match: false
+
+  - name: "Jobright Data Analysis"
+    repo: "jobright-ai/2026-Data-Analysis-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Jobright Software Engineer"
+    repo: "jobright-ai/2026-Software-Engineer-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Jobright Business Analyst"
+    repo: "jobright-ai/2026-Business-Analyst-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Jobright Engineering"
+    repo: "jobright-ai/2026-Engineer-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Jobright Accounting & Finance"
+    repo: "jobright-ai/2026-Account-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Jobright Consulting"
+    repo: "jobright-ai/2026-Consultant-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Jobright Product Management"
+    repo: "jobright-ai/2026-Product-Management-Internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "NUFT Quant 2027"
+    repo: "northwesternfintech/2027QuantInternships"
+    strategy: yaml_dir
+    dir: "data"
+    # One YAML file per firm, one entry per open role link. The role names are
+    # codes ("QT", "QR", "SWE"), so neither an internship-title check nor a
+    # keyword check can work on them - the repo itself is the filter.
+    require_internship_title: false
+    keyword_match: false
+
+  # ===========================================================================
+  # 3. Canada - a specific plus in the profile, not a fallback
+  # ===========================================================================
+  - name: "Canadian Tech Internships 2026"
+    repo: "negarprh/Canadian-Tech-Internships-2026"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Zapply Canada Internships 2027"
+    repo: "zapplyjobs/Canada-Internships-2027"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Francklin Canada internships"
+    repo: "Francklin9999/canada-internship"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Krishpraj Canadian 2026"
+    repo: "Krishpraj/Canadian_Internships_2026"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "hanzili Canada co-ops"
+    repo: "hanzili/canada_sde_intern_position"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "hanzili Canada 25/26"
+    repo: "hanzili/Canadian-25-26-Internships"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "Dannny-Babs Canadian tech"
+    repo: "Dannny-Babs/Canadian-Tech-Internships-2025"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "jenndryden Canadian tech"
+    repo: "jenndryden/Canadian-Tech-Internships-and-New-Grad-2025"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "lucianlavric Canada"
+    repo: "lucianlavric/CanadaTechInternships-Summer2026"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+
+  - name: "Mubeen Canada 2026"
+    repo: "MubeenMohammed/canada-2026-internships"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+
+  # Business as well as tech, and the one Canadian list that tags roles by year
+  # - "Sophomore Summer Business Analyst" is a row in it.
+  - name: "isaiahiruoha Canada tech & business"
+    repo: "isaiahiruoha/Canadian-Tech-And-Business-Internships-Summer-2025"
+    strategy: markdown
+    paths: ["README.md"]
+
+  - name: "SamZhang Canada winter"
+    repo: "SamZhang02/Canadian-Tech-Internships-Winter-2025"
+    strategy: markdown
+    paths: ["README.md"]
+
+  # ===========================================================================
+  # 4. Underclassmen - freshman and sophomore eligible
+  # ===========================================================================
+  # Summer 2027 is Sunny's sophomore summer, which is the year the big lists
+  # implicitly skip: their rows assume a penultimate-year student. These four
+  # exist specifically for the year below that.
+  - name: "Underclassmen internships"
+    repo: "zapplyjobs/underclassmen-internships"
+    strategy: markdown
+    paths: ["README.md"]
+    # Rows here are named programs - "Microsoft Explore", "IBM Accelerate",
+    # "Jane Street Immersion Program" - so a title check for the word "intern"
+    # would throw away the entire repo.
+    require_internship_title: false
+    keyword_match: false
+
+  - name: "Underclassmen opportunities"
+    repo: "Jose-Gael-Cruz-Lopez/underclassmen-opportunities"
+    strategy: json
+    paths: [".github/scripts/listings.json"]
+    require_internship_title: false
+    keyword_match: false
+
+  - name: "LuisaE exploratory programs"
+    repo: "LuisaE/opportunities"
+    strategy: markdown
+    paths: ["README.md"]
+    # CS and finance exploratory programs for underclassmen, listed by program
+    # name with a deadline rather than a role title.
+    require_internship_title: false
+    keyword_match: false
+
+  # ===========================================================================
+  # 5. Programs and batch schemes - fellowships, cohorts, insight programs
+  # ===========================================================================
+  # These are applications with fixed cohorts and deadlines rather than
+  # rolling job postings, so the interesting event is a program opening at all.
+  # None of them carry role titles, hence both filters off.
+  - name: "Open-source programs"
+    repo: "deepanshu1422/List-Of-Open-Source-Internships-Programs"
+    strategy: markdown
+    paths: ["README.md"]
+    require_internship_title: false
+    keyword_match: false
+
+  - name: "CS everything but internships"
+    repo: "Julian048/CS-Everything-but-Internships"
+    strategy: markdown
+    paths: ["README.md"]
+    require_internship_title: false
+    keyword_match: false
+
+  - name: "Hardware & embedded 2026"
+    repo: "LogicodeHQ/hardware-jobs-internships-2026"
+    strategy: markdown
+    paths: ["README.md"]

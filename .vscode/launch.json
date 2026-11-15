@@ -1,0 +1,42 @@
+{
+    // Every config here runs from the project root (${workspaceFolder}), which
+    // is what puts the `tracker` package on the import path. Hitting VS Code's
+    // plain "Run Python File" on a module inside tracker/ will always fail with
+    // "No module named 'tracker'" - use these instead.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Tracker: run forever",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/run.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Script: stats (job counts)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.stats",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Script: health check (find broken scrapers)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.health_check",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Script: reset companies",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.reset_companies",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        }
+    ]
+}

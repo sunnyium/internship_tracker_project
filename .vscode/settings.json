@@ -1,0 +1,21 @@
+{
+    // Use the project's own venv, not whichever of the machine's several
+    // Pythons VS Code happens to pick. There are at least three on this box
+    // (Programs\Python313-arm64, the Store 3.11, and a uv-managed 3.13.5) and
+    // only the venv is guaranteed to have this project's dependencies.
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+
+    // Resolve `from tracker import ...` from the project root, so the editor
+    // stops underlining imports in files under tracker/ and scripts/.
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ],
+    "python.terminal.executeInFileDir": false,
+
+    // Anything run in the integrated terminal gets the project root on its
+    // import path, which is what `python -m scripts.stats` needs.
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${workspaceFolder}"
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+}

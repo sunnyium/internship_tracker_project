@@ -1,0 +1,17 @@
+# List company names here (one per line, must match the "name" field
+# in companies.yaml exactly) to wipe their tracked history from the database.
+#
+# Run `python reset_companies.py` afterward to apply it. That deletes all
+# stored job records + the baseline flag for each listed company, so the
+# next check re-baselines it from scratch - existing postings won't
+# trigger notifications, only new ones from that point on.
+#
+# This only resets tracking data - it does NOT remove the source from
+# companies.yaml. To stop monitoring a company entirely, delete or comment
+# out its entry in companies.yaml directly.
+#
+# Lines starting with # are ignored. This file is cleared automatically
+# after each successful run of reset_companies.py.
+
+# Example:
+# Microsoft

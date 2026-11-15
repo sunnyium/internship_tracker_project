@@ -1,0 +1,215 @@
+# =============================================================================
+# Internship Tracker Config
+# =============================================================================
+
+# How often to check all sources, in seconds. 600 = every 10 minutes.
+# Don't go much below 60s - most job boards will rate-limit or block you.
+#
+# Set to 600 rather than 180 because browser-rendered sources cost ~10s each
+# (see browser_rendering below): with this many companies configured, a full
+# sweep takes longer than 180s, so rounds would just run back-to-back. That's
+# harmless, but a value the sweep can actually finish inside makes the logs
+# and the real check frequency mean what they say. Lower it if you trim the
+# company list down.
+poll_interval_seconds: 600
+
+# How many sources to fetch at the same time. Fetching is pure network waiting,
+# so this is limited by politeness, not by your CPU: 508 of the configured
+# companies are Greenhouse boards served from a single host, and firing all of
+# them at once looks like an attack and invites a rate-limit or a ban.
+#
+# 10 takes a full sweep from ~10 minutes to ~3 while keeping any one host down
+# to a handful of concurrent requests. Raising it much past 15 buys little and
+# starts risking blocks. Set to 1 to go back to fetching one at a time.
+max_fetch_workers: 10
+
+# Log a line for every posting that was examined and rejected, not just a
+# per-company summary. Useful when tuning keywords or debugging a filter;
+# leave it off for scheduled runs, where a seven-day window across 1,104
+# companies turns this into tens of thousands of log lines per round.
+# Matches are always logged either way.
+verbose_logging: false
+
+# Only consider postings from the last N hours. Applies wherever the source
+# gives us a real posting date (Greenhouse, Lever, Workday). Sources that
+# don't expose a date (generic_html) skip this filter rather than risk
+# hiding something we can't actually verify the age of.
+#
+# 168 = 7 days. Widened from 24h so that a posting isn't missed just because
+# the tracker happened to be stopped the day it went up - with a week-long
+# window, restarting after a few days off still catches everything. The
+# dedupe database, not this number, is what stops repeat notifications, so a
+# wider window costs nothing on an ongoing basis.
+#
+# NOTE: the first round after widening this will be large - every posting
+# from the past week that isn't already in seen_jobs.db counts as new.
+max_posting_age_hours: 168
+
+# Keywords checked (case-insensitive) against job title + description.
+# A job is an immediate "relevant" match if ANY of these appear. Tuned for:
+# Data Science, Computational and Applied Mathematics, Computer Science,
+# Statistics - plus interest areas: AI/ML, cybersecurity, finance, analyst
+# roles, or anything technical broadly related to those fields. This list
+# doesn't need to be exhaustive - anything it misses still gets a second
+# look from the AI double-check below, which is instructed to cast a wide
+# net for the same fields.
+keywords:
+  - "data science"
+  - "data scientist"
+  - "data analyst"
+  - "data engineer"
+  - "computer science"
+  - "software engineer"
+  - "software engineering"
+  - "software developer"
+  - "computational mathematics"
+  - "applied mathematics"
+  - "computational science"
+  - "mathematics"
+  - "statistics"
+  - "statistician"
+  - "statistical"
+  - "business analyst"
+  - "financial analyst"
+  - "research analyst"
+  - "analytics"
+  - "quant"                # catches "quant", "quantitative"
+  - "quantitative"
+  - "quantum"
+  - "finance"
+  - "financial engineering"
+  - "cybersecurity"
+  - "cyber security"
+  - "security engineer"
+  - "information security"
+  - "artificial intelligence"
+  - "machine learning"
+  - " ai "                  # spaces avoid matching inside random words like "said"
+  - "ai/ml"
+  - "ml engineer"
+  - "deep learning"
+  - "algorithm"
+
+# A job MUST also look like an internship (title contains one of these)
+# to be considered at all. Adjust if you also want new-grad roles, etc.
+internship_title_hints:
+  - "intern"
+  - "internship"
+  - "co-op"
+  - "coop"
+  - "student researcher"   # Google-style internship-equivalent roles
+
+# --- AI double-check (catches near-misses that keywords don't) ---
+ai_classification:
+  enabled: true
+  # Only used for jobs that pass the internship_title_hints filter but
+  # DON'T match any keyword above - i.e. "maybe relevant" cases.
+  # Free via Groq (https://console.groq.com/keys, no credit card needed).
+  model: "llama-3.3-70b-versatile"
+
+# --- Degree-level filter ---
+degree_filter:
+  enabled: true
+  # Excludes postings EXPLICITLY aimed only at Masters/PhD students (e.g.
+  # "PhD Intern", "must be enrolled in a PhD program"). Anything that
+  # mentions Masters/PhD alongside Bachelor's-level terms ("BS/MS"),
+  # softens it ("PhD preferred"), or doesn't specify a level at all is
+  # KEPT - fail-open, same as everything else in this tracker.
+
+# --- Location filter ---
+location_filter:
+  enabled: true
+  # Only these regions are allowed through. Currently supports "US" and "CA".
+  allowed_regions: ["US", "CA"]
+  # If a source doesn't give us a location at all, or gives one we can't
+  # confidently classify, the posting is KEPT rather than dropped - per
+  # the same "rather over-notify than miss something" principle used
+  # elsewhere. This only filters out postings with a location we can
+  # confidently identify as outside the allowed regions.
+
+# --- Term/season filter ---
+term_filter:
+  enabled: true
+  # Excludes postings that EXPLICITLY name a cycle not in this list (Fall,
+  # Winter, Spring) and never mention an allowed one anywhere in the same
+  # title/description. A posting that doesn't name a season at all is KEPT -
+  # fail-open, same as everything else in this tracker. A bare season word
+  # only counts next to a year ("Fall 2027"), so office locations like
+  # "Fall River, MA" or "Winter Park, FL" can't trip this.
+  allowed_terms: ["summer"]
+
+# --- Headless-browser rendering (for JavaScript-rendered career pages) ---
+# Some career sites (Tesla, Meta, TikTok, Snap, ...) draw their job list with
+# JavaScript, so a plain HTTP request sees an empty shell. Rendering them in a
+# real headless Chromium fixes that. Requires a one-time install:
+#
+#     pip install playwright
+#     playwright install chromium
+#
+browser_rendering:
+  # Controls whether `type: auto` sources FALL BACK to rendering when their
+  # cheaper strategies (URL patterns, platform sniffing, plain HTML scrape)
+  # come up empty. Sources set to `type: browser` in companies.yaml always
+  # render regardless of this setting.
+  enabled: true
+
+  # Defaults for every rendered page; any source in companies.yaml can
+  # override these individually.
+  timeout_ms: 30000
+  # Extra grace period after the page settles - job lists often arrive in a
+  # second request fired once the JS framework has mounted. 2500 was tested
+  # and found too tight (Atlassian's list intermittently lost the race);
+  # raise it for a specific source if that source keeps coming up empty.
+  wait_after_load_ms: 4000
+  # Scroll to the bottom this many times, for sites that lazy-load more jobs
+  # as you scroll. 0 = don't scroll.
+  scroll_times: 2
+
+# NOTE ON TIMING: rendering costs roughly 5-10 seconds per source, versus
+# milliseconds for a plain request. With a lot of JS-rendered companies
+# configured, a full round can easily exceed the 180s poll interval above -
+# rounds then just run back-to-back, which is harmless but means "every 3
+# minutes" becomes "as fast as a full sweep takes". If you want a predictable
+# cadence, raise poll_interval_seconds to 600 (10 min) once you see how long
+# a round actually takes in the logs.
+
+# --- Sources to scrape ---
+# The actual company list lives in companies.yaml, not here - keeps this
+# file focused on settings you'll rarely touch, separate from the company
+# list you'll keep adding to. See companies.yaml for the format and
+# available source types.
+companies_file: "companies.yaml"
+
+# --- Notifications ---
+# Two channels, email and ntfy push. Both send ONE message per round covering
+# everything found in it - never one message per posting.
+#
+# No addresses or credentials here: this file is committed, and an email
+# address and app password are not things to commit. Those live in .env:
+#
+#     EMAIL_FROM_ADDRESS   the Gmail account that sends (and authenticates)
+#     EMAIL_APP_PASSWORD   a Gmail app password, not the account password
+#     EMAIL_TO_ADDRESS     where digests go; blank = same as FROM
+#
+notifications:
+  email:
+    enabled: true
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    # Only sends when the round actually found something - a round with no
+    # matches deliberately produces no email at all.
+
+  ntfy:
+    enabled: true
+    # Free push to phone/desktop, no account needed. Install the ntfy app and
+    # subscribe to this exact topic string.
+    #
+    # A topic is public to anyone who knows its name, which is why this one is
+    # deliberately unguessable rather than descriptive. Don't share it, and
+    # don't commit a topic you actually use if this repo ever goes public.
+    topic: "sunny-intern-alerts-k4mq7wz2xr9t"
+    server: "https://ntfy.sh"
+    # Unlike email, this fires on every round: a digest when there are matches
+    # (high priority), and a quiet low-priority "round finished" heartbeat when
+    # there aren't. That way silence means the tracker has stopped running,
+    # not that the job market is quiet.

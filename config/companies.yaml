@@ -1,0 +1,5204 @@
+# =============================================================================
+# Companies to scrape
+# =============================================================================
+# This is the file you'll actually edit as you add companies - keeps the
+# growing company list separate from config.yaml's settings (keywords,
+# notifications, etc.), which you'll touch far less often.
+#
+# type: auto | greenhouse | lever | workday | generic_html | apple | oracle_cloud | eightfold | amazon | google | phenom
+#
+# "auto" tries to figure out the platform from just a URL - known patterns
+# first (Greenhouse/Lever/Workday/Apple), then content signatures
+# (Phenom/Oracle/Eightfold), then a generic heuristic scrape as a last
+# resort. Try this FIRST for any new company - only reach for a specific
+# type below if auto-detection doesn't work for that site (see README's
+# "Configure your sources" section for details on each type's options).
+#
+# -----------------------------------------------------------------------------
+# How the types below were chosen
+# -----------------------------------------------------------------------------
+# Entries where the platform is readable straight off the URL (myworkdayjobs
+# .com, greenhouse.io, oraclecloud.com) use that explicit type. Everything
+# else is "auto" so the scraper can sniff the platform itself.
+#
+# Explicit types were originally also guessed from URL *shape* (the Eightfold
+# "?domain=&start=&pid=" query, the Phenom "/search-results" + "pagesize=20"
+# query). A real run showed those guesses failing hard: an explicit type that
+# guesses wrong aborts the source, while "auto" tries the platform sniff, then
+# a plain scrape, then a headless browser. Those 23 entries are now "auto" and
+# say so - their old platform keys are kept below as hints.
+#
+# Lines marked "# guess:" are inferences, not URL facts - if one of those
+# sources errors or returns 0 jobs, that line is the first thing to change.
+# Lines marked "# verified:" were tested against the live site.
+# Lines marked "# KNOWN BROKEN" are understood failures, left in deliberately.
+
+sources:
+  # ---------------------------------------------------------------------------
+  # Tech / consumer
+  # ---------------------------------------------------------------------------
+  - type: greenhouse
+    name: "Robinhood"
+    slug: "robinhood"          # guess: careers.robinhood.com is a Greenhouse-backed board
+
+  - type: greenhouse
+    name: "Waymo"
+    slug: "waymo"              # guess: careers.withwaymo.com is a Greenhouse-backed board
+
+  - type: auto
+    name: "Twilio"
+    url: "https://jobs.twilio.com/careers?start=0&pid=1099554928347&sort_by=timestamp"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://jobs.twilio.com/careers?start=0&pid=1099554928347&sort_by=timestamp"
+    domain: "twilio.com"       # not in the URL's query string, so set explicitly
+    query: "intern"
+
+  - type: greenhouse
+    name: "Okta"
+    slug: "okta"               # guess: okta.com/company/careers embeds a Greenhouse board
+
+  - type: greenhouse
+    name: "Cloudflare"
+    slug: "cloudflare"         # guess: cloudflare.com/careers/jobs embeds a Greenhouse board
+
+  - type: browser
+    name: "Atlassian"
+    url: "https://www.atlassian.com/company/careers/all-jobs"
+    # Verified: 207 jobs. Its list sometimes loses the race with the default
+    # wait, and Atlassian throttles rapid repeat renders - an occasional
+    # "found no job-shaped links" round for this source is expected.
+    wait_after_load_ms: 6000
+
+  - type: browser
+    name: "Dropbox"
+    url: "https://www.dropbox.jobs/en/jobs/"      # verified: 20 jobs
+
+  - type: auto
+    name: "Pinterest"
+    url: "https://www.pinterestcareers.com/jobs/?search=&pagesize=20"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "www.pinterestcareers.com"
+    query: "intern"
+
+  - type: browser
+    name: "Snap"
+    url: "https://careers.snap.com/jobs?type=Intern"
+    # Verified: 4 jobs (its links are /job?id=R000... - a query-string id,
+    # which the default link pattern handles). Shows one page at a time.
+    scroll_times: 3
+
+  - type: browser
+    name: "TikTok"
+    url: "https://lifeattiktok.com/search"
+    # Verified: 12 jobs. Job links are /search/<id> - indistinguishable from
+    # a search page by shape, so the pattern is pinned to their host.
+    link_pattern: "lifeattiktok\\.com/search/\\d"
+    scroll_times: 3
+
+  - type: ashby
+    name: "OpenAI"
+    slug: "openai"    # verified: 750 postings via Ashby API (vs 14 by DOM scraping)
+
+  - type: greenhouse
+    name: "Databricks"
+    slug: "databricks"         # guess: databricks.com/company/careers embeds a Greenhouse board
+
+  - type: auto
+    name: "Stripe"
+    url: "https://stripe.com/jobs/search?tags=University"
+
+  - type: greenhouse
+    name: "Airbnb"
+    slug: "airbnb"             # guess: careers.airbnb.com is a Greenhouse-backed board
+
+  - type: auto
+    name: "DoorDash"
+    url: "https://careersatdoordash.com/job-search/"
+    # Was type: greenhouse - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    slug: "doordash"           # guess: careersatdoordash.com is a Greenhouse-backed board
+
+  - type: greenhouse
+    name: "Roblox"
+    slug: "roblox"             # guess: careers.roblox.com is a Greenhouse-backed board
+
+  - type: greenhouse
+    name: "Hasbro"
+    slug: "hasbro"             # from job-boards.greenhouse.io/hasbro
+
+  - type: browser
+    name: "Beli"
+    url: "https://beli.breezy.hr/"                # verified: 6 jobs (Breezy HR)
+
+  - type: browser
+    name: "Uber"
+    url: "https://jobs.uber.com/en/jobs/?search=Intern"   # verified: 12 jobs
+    scroll_times: 3
+
+  - type: eightfold
+    name: "Netflix"
+    careers_url: "https://explore.jobs.netflix.net/careers?query=internship"
+    domain: "netflix.com"      # not in the URL's query string, so set explicitly
+    query: "intern"
+
+  - type: browser
+    name: "Meta"
+    url: "https://www.metacareers.com/jobs?roles[0]=Internship"
+    # Verified: 10 jobs. Meta's job links live under /profile/job_details/<id>,
+    # which the default job-link pattern has no reason to match.
+    link_pattern: "/profile/job_details/"
+    scroll_times: 3
+
+  # ---------------------------------------------------------------------------
+  # Big tech (dedicated fetchers)
+  # ---------------------------------------------------------------------------
+  - type: amazon
+    name: "Amazon"
+    query: "intern"
+
+  - type: google
+    name: "Google"
+    careers_url: "https://www.google.com/about/careers/applications/jobs/results?employment_type=INTERN"
+
+  - type: auto
+    name: "Microsoft"
+    url: "https://apply.careers.microsoft.com/careers?query=intern&start=0&pid=1970393556866710&sort_by=relevance"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://apply.careers.microsoft.com/careers?query=intern&start=0&pid=1970393556866710&sort_by=relevance"
+    domain: "microsoft.com"    # not in the URL's query string, so set explicitly
+    query: "intern"
+
+  - type: workday
+    name: "NVIDIA"
+    tenant: "nvidia"
+    host: "wd5"
+    site: "NVIDIAExternalCareerSite"
+
+  - type: workday
+    name: "Broadcom"
+    tenant: "broadcom"
+    host: "wd1"
+    site: "External_Career"
+
+  - type: workday
+    name: "Intel"
+    tenant: "intel"
+    host: "wd1"
+    site: "External"
+
+  - type: workday
+    name: "Salesforce"
+    tenant: "salesforce"
+    host: "wd12"
+    site: "External_Career_Site"
+
+  - type: workday
+    name: "CrowdStrike"
+    tenant: "crowdstrike"
+    host: "wd5"
+    site: "crowdstrikecareers"
+
+  - type: workday
+    name: "Cloudera"
+    tenant: "cloudera"
+    host: "wd5"
+    site: "External_Career"
+
+  - type: workday
+    name: "Workday"
+    tenant: "workday"
+    host: "wd5"
+    site: "Workday_Early_Career"
+
+  - type: phenom
+    name: "Snowflake"
+    domain: "careers.snowflake.com"
+    query: "intern"
+
+  - type: phenom
+    name: "Adobe"
+    domain: "careers.adobe.com"
+    query: "intern"
+
+  - type: auto
+    name: "ServiceNow"
+    url: "https://careers.servicenow.com/jobs/?search=&jobPostingType=Intern&pagesize=20"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "careers.servicenow.com"
+    query: "intern"
+
+  - type: phenom
+    name: "eBay"
+    domain: "jobs.ebayinc.com"
+    query: "intern"
+
+  - type: auto
+    name: "NetApp"
+    url: "https://careers.netapp.com/category/internships-jobs/27600/8608640/1"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "careers.netapp.com"
+    query: "intern"
+
+  - type: auto
+    name: "Elastic (Canada)"
+    url: "https://jobs.elastic.co/jobs/country/canada?size=n_20_n"
+
+  - type: auto
+    name: "Elastic (US)"
+    url: "https://jobs.elastic.co/jobs/country/united-states?size=n_20_n"
+
+  - type: auto
+    name: "Teradata"
+    url: "https://careers.teradata.com/jobs"
+
+  - type: auto
+    name: "EPAM"
+    url: "https://careers.epam.com/en/jobs"
+
+  - type: auto
+    name: "Globant"
+    url: "https://career.globant.com/"
+
+  - type: auto
+    name: "SAP"
+    url: "https://jobs.sap.com/search/?q=&optionsFacetsDD_customfield3=Student"   # SuccessFactors, no built-in type yet
+
+  - type: auto
+    name: "Seagate"
+    url: "https://seagatecareers.com/search/?q=intern"   # SuccessFactors, no built-in type yet
+
+  - type: workday
+    name: "KLA"
+    tenant: "kla"
+    host: "wd1"
+    site: "Search"
+
+  - type: workday
+    name: "Kyndryl"
+    tenant: "kyndryl"
+    host: "wd5"
+    site: "KyndrylEarlyCareers"
+
+  # ---------------------------------------------------------------------------
+  # Semiconductors / hardware
+  # ---------------------------------------------------------------------------
+  - type: auto
+    name: "ASML"
+    url: "https://www.asml.com/en/careers/find-your-job?job_country=US&job_type=Internship"
+
+  - type: auto
+    name: "Qualcomm"
+    url: "https://careers.qualcomm.com/careers?domain=qualcomm.com&start=0&pid=&sort_by=relevance&filter_seniority=Intern"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://careers.qualcomm.com/careers?domain=qualcomm.com&start=0&pid=&sort_by=relevance&filter_seniority=Intern"
+    query: "intern"
+
+  - type: auto
+    name: "Micron"
+    url: "https://careers.micron.com/careers?domain=micron.com&query=Intern&start=0&pid=42846382&sort_by=timestamp"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://careers.micron.com/careers?domain=micron.com&query=Intern&start=0&pid=42846382&sort_by=timestamp"
+    query: "intern"
+
+  - type: auto
+    name: "AMD"
+    url: "https://careers.amd.com/students/jobs"
+
+  - type: auto
+    name: "Applied Materials"
+    url: "https://careers.appliedmaterials.com/careers?domain=appliedmaterials.com&start=0&location=United+States&pid=790317107140&sort_by=match&filter_include_remote=1&filter_employee_type=intern+%2F+student"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://careers.appliedmaterials.com/careers?domain=appliedmaterials.com&start=0&location=United+States&pid=790317107140&sort_by=match&filter_include_remote=1&filter_employee_type=intern+%2F+student"
+    query: "intern"
+    # api_host: "careers.appliedmaterials.com"   # manual override, if auto-detected host ever fails
+
+  - type: auto
+    name: "Lam Research"
+    url: "https://careers.lamresearch.com/careers?start=0&pid=1099554496161&sort_by=timestamp&filter_paygrade=graduate%2Fentry+level%2Cintern%2Fapprentice"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://careers.lamresearch.com/careers?start=0&pid=1099554496161&sort_by=timestamp&filter_paygrade=graduate%2Fentry+level%2Cintern%2Fapprentice"
+    domain: "lamresearch.com"   # not present in the URL's query string, so set explicitly
+    query: "intern"
+
+  - type: phenom
+    name: "Cisco"
+    domain: "careers.cisco.com"
+    ref_num: "CISCISGLOBAL"
+    query: "intern"
+
+  # ---------------------------------------------------------------------------
+  # Finance / fintech / exchanges
+  # ---------------------------------------------------------------------------
+  - type: auto
+    name: "Bloomberg"
+    url: "https://bloomberg.avature.net/careers/SearchJobs/"   # Avature, no built-in type yet
+
+  - type: workday
+    name: "Mastercard"
+    tenant: "mastercard"
+    host: "wd1"
+    site: "Campus"
+
+  - type: workday
+    name: "Visa (Early Careers) 2/2"
+    tenant: "visa"
+    host: "wd5"
+    site: "Visa_Early_Careers"
+
+  - type: workday
+    name: "Visa 1/2"
+    tenant: "visa"
+    host: "wd5"
+    site: "Visa"
+
+  - type: workday
+    name: "CME Group"
+    tenant: "cmegroup"
+    host: "wd1"
+    site: "cme_careers"
+
+  - type: workday
+    name: "Nasdaq"
+    tenant: "nasdaq"
+    host: "wd1"
+    site: "Global_External_Site"
+
+  - type: workday
+    name: "TMX Group"
+    tenant: "tmx"
+    host: "wd3"
+    site: "TMX_Careers"
+
+  - type: workday
+    name: "TD Bank"
+    tenant: "td"
+    host: "wd3"
+    site: "TD_Bank_Careers"
+
+  - type: workday
+    name: "Morningstar"
+    tenant: "morningstar"
+    host: "wd5"
+    site: "morningstar"
+
+  - type: auto
+    name: "PayPal"
+    url: "https://paypal.eightfold.ai/careers?start=0&pid=274921127443&sort_by=timestamp"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://paypal.eightfold.ai/careers?start=0&pid=274921127443&sort_by=timestamp"
+    domain: "paypal.com"       # not in the URL's query string, so set explicitly
+    query: "intern"
+
+  - type: auto
+    name: "Charles Schwab"
+    url: "https://www.schwabjobs.com/search-jobs"
+
+  - type: auto
+    name: "Capital One"
+    url: "https://www.capitalonecareers.com/search-jobs/Intern/234/1"
+
+  - type: phenom
+    name: "RBC"
+    domain: "jobs.rbc.com"
+    query: "intern"
+
+  - type: phenom
+    name: "BMO"
+    domain: "jobs.bmo.com"
+    query: "intern"
+
+  - type: auto
+    name: "Scotiabank"
+    url: "https://jobs.scotiabank.com/go/Student-&-New-Grad-Jobs/2298417"
+
+  - type: auto
+    name: "Moody's"
+    url: "https://careers.moodys.com/en/category/graduate-and-interns-jobs/49841/9383648/1"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "careers.moodys.com"
+    query: "intern"
+
+  # ---------------------------------------------------------------------------
+  # Enterprise / industrial / healthcare / consumer brands
+  # ---------------------------------------------------------------------------
+  - type: auto
+    name: "Oracle"
+    url: "https://careers.oracle.com/en/sites/jobsearch/jobs"
+    # Was type: oracle_cloud - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    # The careers page URL you'd normally browse to - used to auto-discover
+    # the API domain + site number. If auto-discovery fails, find these
+    # manually via browser dev tools (see fetch_oracle_cloud in sources.py)
+    # and set api_domain / site_number below instead.
+    careers_url: "https://careers.oracle.com/en/sites/jobsearch/jobs"
+    query: "intern"
+    # api_domain: "eeho.fa.us2.oraclecloud.com"   # manual override, if needed
+    # site_number: "CX_45001"                      # manual override, if needed
+
+  - type: auto
+    name: "Dell"
+    url: "https://iawmqy.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/careers/jobs"
+    # Was type: oracle_cloud - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://iawmqy.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/careers/jobs"
+    query: "intern"
+
+  - type: auto
+    name: "Johnson & Johnson (Data Science)"
+    url: "https://www.careers.jnj.com/en/jobs/?search=data+science&team=Career+Programs&pagesize=20"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "www.careers.jnj.com"
+    query: "data science"
+
+  - type: auto
+    name: "Johnson & Johnson (Technology)"
+    url: "https://www.careers.jnj.com/en/jobs/?search=technology&team=Career+Programs&pagesize=20"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "www.careers.jnj.com"
+    query: "technology"
+
+  - type: workday
+    name: "GE Appliances"
+    tenant: "haier"
+    host: "wd3"
+    site: "GE_Appliances"
+
+  - type: auto
+    name: "Coca-Cola"
+    url: "https://careers.coca-colacompany.com/?category[]=Interns%20%26%20Temporary%20Employment"
+
+  - type: auto
+    name: "PepsiCo"
+    url: "https://www.pepsicojobs.com/internshipsprograms/jobs?keywords=Intern&sortBy=relevance&page=1"
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "www.pepsicojobs.com"
+    query: "intern"
+
+  - type: phenom
+    name: "Philip Morris International"
+    domain: "join.pmicareers.com"
+    query: "intern"
+
+  - type: auto
+    name: "Humana"
+    url: "https://careers.humana.com/us/en/c/internship-jobs"
+
+  - type: auto
+    name: "Disney (US)"
+    url: "https://www.disneycareers.com/en/search-jobs"
+
+  - type: auto
+    name: "Boeing (US)"
+    url: "https://jobs.boeing.com/search-jobs/United%20States/185/2/6252001/39x76/-98x5/50/2"
+
+  - type: auto
+    name: "Boeing (Canada)"
+    url: "https://jobs.boeing.com/search-jobs/Canada/185/2/6251999/60x10867/-113x64258/50/2"
+
+  - type: auto
+    name: "Intuit"
+    url: "https://jobs.intuit.com/search-jobs"
+
+  - type: auto
+    name: "Hilton Grand Vacations"
+    url: "https://careers.hgv.com/job-search-results/?sub_category=Internships"
+
+  - type: auto
+    name: "FedEx"
+    url: "https://careers.fedex.com/career-areas/student-programs/jobs"
+
+  - type: auto
+    name: "General Motors"
+    url: "https://search-careers.gm.com/en/jobs/?search=Intern&location="
+    # Was type: phenom - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    domain: "search-careers.gm.com"
+    query: "intern"
+
+  - type: auto
+    name: "Ford"
+    url: "https://jobs.ford.com/careers?domain=ford.com&hl=en&start=0&pid=563568452391562&sort_by=hot"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://jobs.ford.com/careers?domain=ford.com&hl=en&start=0&pid=563568452391562&sort_by=hot"
+    query: "intern"
+
+  # KNOWN BROKEN - both Tesla entries. Not a rendering problem: tesla.com
+  # returns an Akamai "Access Denied" page to a headless browser before any
+  # JavaScript runs, i.e. they deliberately block automated access. Nothing
+  # in this tracker can fix that, and working around a block someone put up
+  # on purpose isn't the right move - check Tesla's site manually.
+  - type: auto
+    name: "Booz Allen Hamilton"
+    url: "https://careers.boozallen.com/jobs/search"
+
+  - type: auto
+    name: "Northrop Grumman"
+    url: "https://jobs.northropgrumman.com/careers?start=0&pid=1340073110927&sort_by=timestamp"
+    # Was type: eightfold - errored on every round, so it now takes the full auto
+    # chain instead (platform sniff, then browser fallback). Keys below are kept
+    # as hints for whichever platform the sniff lands on.
+    careers_url: "https://jobs.northropgrumman.com/careers?start=0&pid=1340073110927&sort_by=timestamp"
+    domain: "northropgrumman.com"   # not in the URL's query string, so set explicitly
+    query: "intern"
+
+  - type: auto
+    name: "Expedia Group"
+    url: "https://careers.expediagroup.com/jobs/?keyword=emerging+talent+and+careers"
+
+  - type: auto
+    name: "Booking.com"
+    url: "https://jobs.booking.com/booking/jobs"
+
+  - type: auto
+    name: "Paramount"
+    url: "https://careers.paramount.com/go/Interns/8710100/"   # SuccessFactors, no built-in type yet
+
+  # ---------------------------------------------------------------------------
+  # Banking / consulting / Canadian employers
+  # ---------------------------------------------------------------------------
+  # All unverified so far. "auto" rather than a guessed platform type on
+  # purpose: a wrong explicit type aborts the source outright, while auto
+  # falls through URL patterns -> platform sniff -> plain scrape -> browser.
+  - type: workday
+    name: "CPP Investments"
+    tenant: "cppib"
+    host: "wd10"
+    site: "cppinvestments"
+
+  - type: workday
+    name: "Sun Life"
+    tenant: "sunlife"
+    host: "wd3"
+    site: "Experienced-Jobs"
+
+  - type: ashby
+    name: "Polymarket"
+    slug: "polymarket"    # verified: 63 postings
+
+  - type: ashby
+    name: "Kalshi"
+    slug: "kalshi"    # verified: 37 postings
+
+  # KNOWN BROKEN - Bell, EY and UBS all render their job rows as
+  # javascript:void(0) / # click handlers rather than real links, so there is
+  # no href for a DOM scrape to extract. Tried: auto, browser with long waits
+  # and scrolling, and (for Bell) type: phenom, which returned 0. These need
+  # their site's own JSON API wired up as a new source type. Left in so they
+  # aren't forgotten; expect them to error every round.
+  - type: auto
+    name: "HSBC"
+    url: "https://www.hsbc.com/careers/students-and-graduates/find-a-programme?programme-type=internship-programme"
+
+  - type: auto
+    name: "Barclays"
+    url: "https://search.jobs.barclays/search-jobs"
+
+  - type: auto
+    name: "Pomerleau"
+    url: "https://jobs.pomerleau.ca/en_US/Jobs/SearchJobs"
+
+  - type: auto
+    name: "EY"
+    url: "https://usearlycareers.ey.com/search-jobs"
+    # KNOWN BROKEN - see the Bell note above.
+
+  - type: auto
+    name: "PwC"
+    url: "https://jobs-ca.pwc.com/campus/ca/en/search-results"
+
+  - type: auto
+    name: "Caterpillar"
+    url: "https://careers.caterpillar.com/en/jobs/?orderby=0&pagesize=20&page=1&radius=100&team=Students%20and%20Graduates"
+
+  - type: auto
+    name: "UBS"
+    url: "https://jobs.ubs.com/TGnewUI/Search/home/HomeWithPreLoad?partnerid=25008&siteid=5131&PageType=searchResults&SearchType=linkquery&LinkID=15974"
+    # KNOWN BROKEN - see the Bell note above.
+
+  - type: auto
+    name: "KPMG"
+    url: "https://careers.kpmg.ca/students/jobs?limit=25&page=1"
+
+
+  # ---------------------------------------------------------------------------
+  # Tech / AI / data / fintech - discovered by probing Greenhouse, Lever and
+  # Ashby board APIs directly. Every entry below returned real postings at the
+  # time it was added, so these are verified, not guesses.
+  # ---------------------------------------------------------------------------
+  - type: ashby
+    name: "Abridge"
+    slug: "abridge"    # verified: 43 postings
+
+  - type: ashby
+    name: "Acorns"
+    slug: "acorns"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Affirm"
+    slug: "affirm"    # verified: 179 postings
+
+  - type: ashby
+    name: "Airbyte"
+    slug: "airbyte"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "Airtable"
+    slug: "airtable"    # verified: 39 postings
+
+  - type: ashby
+    name: "Alchemy"
+    slug: "alchemy"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Amperity"
+    slug: "amperity"    # verified: 18 postings
+
+  - type: greenhouse
+    name: "Amplitude"
+    slug: "amplitude"    # verified: 46 postings
+
+  - type: lever
+    name: "Anchorage Digital"
+    slug: "anchorage"    # verified: 46 postings
+
+  - type: greenhouse
+    name: "Anthropic"
+    slug: "anthropic"    # verified: 416 postings
+
+  - type: greenhouse
+    name: "Arize AI"
+    slug: "arizeai"    # verified: 31 postings
+
+  - type: greenhouse
+    name: "Asana"
+    slug: "asana"    # verified: 147 postings
+
+  - type: greenhouse
+    name: "AssemblyAI"
+    slug: "assemblyai"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Attentive"
+    slug: "attentive"    # verified: 47 postings
+
+  - type: ashby
+    name: "Benchling"
+    slug: "benchling"    # verified: 51 postings
+
+  - type: greenhouse
+    name: "Betterment"
+    slug: "betterment"    # verified: 41 postings
+
+  - type: greenhouse
+    name: "Braze"
+    slug: "braze"    # verified: 231 postings
+
+  - type: greenhouse
+    name: "Brex"
+    slug: "brex"    # verified: 277 postings
+
+  - type: greenhouse
+    name: "Calendly"
+    slug: "calendly"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Carta"
+    slug: "carta"    # verified: 61 postings
+
+  - type: ashby
+    name: "Cedar"
+    slug: "cedar"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "ChargePoint"
+    slug: "chargepoint"    # verified: 29 postings
+
+  - type: greenhouse
+    name: "Checkr"
+    slug: "checkr"    # verified: 53 postings
+
+  - type: greenhouse
+    name: "Chime"
+    slug: "chime"    # verified: 66 postings
+
+  - type: greenhouse
+    name: "ClickHouse"
+    slug: "clickhouse"    # verified: 173 postings
+
+  - type: greenhouse
+    name: "Cockroach Labs"
+    slug: "cockroachlabs"    # verified: 32 postings
+
+  - type: ashby
+    name: "Cohere"
+    slug: "cohere"    # verified: 138 postings
+
+  - type: greenhouse
+    name: "Coinbase"
+    slug: "coinbase"    # verified: 152 postings
+
+  - type: ashby
+    name: "Confluent"
+    slug: "confluent"    # verified: 35 postings
+
+  - type: greenhouse
+    name: "Coursera"
+    slug: "coursera"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Cresta"
+    slug: "cresta"    # verified: 99 postings
+
+  - type: ashby
+    name: "Cursor (Anysphere)"
+    slug: "cursor"    # verified: 123 postings
+
+  - type: greenhouse
+    name: "Customer.io"
+    slug: "customerio"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Datadog"
+    slug: "datadog"    # verified: 424 postings
+
+  - type: ashby
+    name: "Dave"
+    slug: "dave"    # verified: 8 postings
+
+  - type: ashby
+    name: "Decagon"
+    slug: "decagon"    # verified: 114 postings
+
+  - type: ashby
+    name: "Deepgram"
+    slug: "deepgram"    # verified: 77 postings
+
+  - type: greenhouse
+    name: "DISCO"
+    slug: "disco"    # verified: 31 postings
+
+  - type: greenhouse
+    name: "Discord"
+    slug: "discord"    # verified: 46 postings
+
+  - type: greenhouse
+    name: "Dremio"
+    slug: "dremio"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Duolingo"
+    slug: "duolingo"    # verified: 59 postings
+
+  - type: ashby
+    name: "ElevenLabs"
+    slug: "elevenlabs"    # verified: 218 postings
+
+  - type: greenhouse
+    name: "Everlaw"
+    slug: "everlaw"    # verified: 34 postings
+
+  - type: greenhouse
+    name: "Faire"
+    slug: "faire"    # verified: 66 postings
+
+  - type: greenhouse
+    name: "Figma"
+    slug: "figma"    # verified: 175 postings
+
+  - type: greenhouse
+    name: "Fireblocks"
+    slug: "fireblocks"    # verified: 66 postings
+
+  - type: greenhouse
+    name: "Fivetran"
+    slug: "fivetran"    # verified: 198 postings
+
+  - type: greenhouse
+    name: "Flexport"
+    slug: "flexport"    # verified: 151 postings
+
+  - type: greenhouse
+    name: "Galileo"
+    slug: "galileo"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Gemini"
+    slug: "gemini"    # verified: 44 postings
+
+  - type: greenhouse
+    name: "GitLab"
+    slug: "gitlab"    # verified: 186 postings
+
+  - type: greenhouse
+    name: "Glossier"
+    slug: "glossier"    # verified: 20 postings
+
+  - type: lever
+    name: "Gopuff"
+    slug: "gopuff"    # verified: 837 postings
+
+  - type: greenhouse
+    name: "Grafana Labs"
+    slug: "grafanalabs"    # verified: 135 postings
+
+  - type: greenhouse
+    name: "Gusto"
+    slug: "gusto"    # verified: 78 postings
+
+  - type: ashby
+    name: "Harvey AI"
+    slug: "harvey"    # verified: 347 postings
+
+  - type: greenhouse
+    name: "Hightouch"
+    slug: "hightouch"    # verified: 67 postings
+
+  - type: greenhouse
+    name: "Instacart"
+    slug: "instacart"    # verified: 124 postings
+
+  - type: greenhouse
+    name: "Intercom"
+    slug: "intercom"    # verified: 128 postings
+
+  - type: greenhouse
+    name: "Iterable"
+    slug: "iterable"    # verified: 22 postings
+
+  - type: greenhouse
+    name: "Khan Academy"
+    slug: "khanacademy"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Klaviyo"
+    slug: "klaviyo"    # verified: 151 postings
+
+  - type: greenhouse
+    name: "Komodo Health"
+    slug: "komodohealth"    # verified: 34 postings
+
+  - type: greenhouse
+    name: "Labelbox"
+    slug: "labelbox"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "LaunchDarkly"
+    slug: "launchdarkly"    # verified: 32 postings
+
+  - type: ashby
+    name: "Lemonade"
+    slug: "lemonade"    # verified: 30 postings
+
+  - type: ashby
+    name: "Linear"
+    slug: "linear"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "LivePerson"
+    slug: "liveperson"    # verified: 18 postings
+
+  - type: greenhouse
+    name: "Lucid Motors"
+    slug: "lucidmotors"    # verified: 267 postings
+
+  - type: greenhouse
+    name: "Lyft"
+    slug: "lyft"    # verified: 156 postings
+
+  - type: greenhouse
+    name: "Marqeta"
+    slug: "marqeta"    # verified: 44 postings
+
+  - type: ashby
+    name: "Miro"
+    slug: "miro"    # verified: 43 postings
+
+  - type: greenhouse
+    name: "Mixpanel"
+    slug: "mixpanel"    # verified: 43 postings
+
+  - type: greenhouse
+    name: "MongoDB"
+    slug: "mongodb"    # verified: 402 postings
+
+  - type: ashby
+    name: "Monte Carlo"
+    slug: "montecarlodata"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Motional"
+    slug: "motional"    # verified: 110 postings
+
+  - type: greenhouse
+    name: "Neo4j"
+    slug: "neo4j"    # verified: 46 postings
+
+  - type: greenhouse
+    name: "Netlify"
+    slug: "netlify"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "New Relic"
+    slug: "newrelic"    # verified: 49 postings
+
+  - type: greenhouse
+    name: "Nuro"
+    slug: "nuro"    # verified: 98 postings
+
+  - type: greenhouse
+    name: "OpenSpace"
+    slug: "openspace"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Oura"
+    slug: "oura"    # verified: 102 postings
+
+  - type: lever
+    name: "Outreach"
+    slug: "outreach"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "Outschool"
+    slug: "outschool"    # verified: 7 postings
+
+  - type: lever
+    name: "Palantir"
+    slug: "palantir"    # verified: 287 postings
+
+  - type: ashby
+    name: "Patreon"
+    slug: "patreon"    # verified: 16 postings
+
+  - type: ashby
+    name: "Paxos"
+    slug: "paxos"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Peloton"
+    slug: "peloton"    # verified: 61 postings
+
+  - type: lever
+    name: "People.ai"
+    slug: "people-ai"    # verified: 8 postings
+
+  - type: ashby
+    name: "Pinecone"
+    slug: "pinecone"    # verified: 5 postings
+
+  - type: ashby
+    name: "Plaid"
+    slug: "plaid"    # verified: 115 postings
+
+  - type: ashby
+    name: "Quora"
+    slug: "quora"    # verified: 4 postings
+
+  - type: ashby
+    name: "Ramp"
+    slug: "ramp"    # verified: 118 postings
+
+  - type: greenhouse
+    name: "Reddit"
+    slug: "reddit"    # verified: 191 postings
+
+  - type: ashby
+    name: "Redis"
+    slug: "redis"    # verified: 28 postings
+
+  - type: greenhouse
+    name: "Relativity"
+    slug: "relativity"    # verified: 342 postings
+
+  - type: ashby
+    name: "Replit"
+    slug: "replit"    # verified: 92 postings
+
+  - type: greenhouse
+    name: "Ripple"
+    slug: "ripple"    # verified: 138 postings
+
+  - type: lever
+    name: "Ro"
+    slug: "ro"    # verified: 51 postings
+
+  - type: ashby
+    name: "Roboflow"
+    slug: "roboflow"    # verified: 27 postings
+
+  - type: greenhouse
+    name: "Salesloft"
+    slug: "salesloft"    # verified: 26 postings
+
+  - type: greenhouse
+    name: "Samsara"
+    slug: "samsara"    # verified: 328 postings
+
+  - type: greenhouse
+    name: "Scale AI"
+    slug: "scaleai"    # verified: 207 postings
+
+  - type: greenhouse
+    name: "Shakepay"
+    slug: "shakepay"    # verified: 8 postings
+
+  - type: ashby
+    name: "Sierra AI"
+    slug: "sierra"    # verified: 168 postings
+
+  - type: greenhouse
+    name: "Sigma Computing"
+    slug: "sigmacomputing"    # verified: 73 postings
+
+  - type: greenhouse
+    name: "SingleStore"
+    slug: "singlestore"    # verified: 40 postings
+
+  - type: ashby
+    name: "Skydio"
+    slug: "skydio"    # verified: 109 postings
+
+  - type: greenhouse
+    name: "Snorkel AI"
+    slug: "snorkelai"    # verified: 42 postings
+
+  - type: greenhouse
+    name: "SoFi"
+    slug: "sofi"    # verified: 58 postings
+
+  - type: greenhouse
+    name: "Squarespace"
+    slug: "squarespace"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Stability AI"
+    slug: "stabilityai"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Starburst"
+    slug: "starburst"    # verified: 13 postings
+
+  - type: ashby
+    name: "Strava"
+    slug: "strava"    # verified: 32 postings
+
+  - type: greenhouse
+    name: "Sumo Logic"
+    slug: "sumologic"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Twitch"
+    slug: "twitch"    # verified: 66 postings
+
+  - type: greenhouse
+    name: "Udemy"
+    slug: "udemy"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Vercel"
+    slug: "vercel"    # verified: 79 postings
+
+  - type: greenhouse
+    name: "Verkada"
+    slug: "verkada"    # verified: 278 postings
+
+  - type: lever
+    name: "Waabi"
+    slug: "waabi"    # verified: 57 postings
+
+  - type: lever
+    name: "Wealthfront"
+    slug: "wealthfront"    # verified: 17 postings
+
+  - type: ashby
+    name: "Wealthsimple"
+    slug: "wealthsimple"    # verified: 39 postings
+
+  - type: ashby
+    name: "Weaviate"
+    slug: "weaviate"    # verified: 4 postings
+
+  - type: ashby
+    name: "Writer"
+    slug: "writer"    # verified: 55 postings
+
+  - type: ashby
+    name: "Zapier"
+    slug: "zapier"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Zeta Global"
+    slug: "zetaglobal"    # verified: 124 postings
+
+  - type: lever
+    name: "Zoox"
+    slug: "zoox"    # verified: 226 postings
+
+  # ---------------------------------------------------------------------------
+  # Canadian employers and companies with major Canadian offices. Same method
+  # as the block above: probed against the Greenhouse/Lever/Ashby board APIs,
+  # so every entry returned real postings when it was added.
+  # ---------------------------------------------------------------------------
+  - type: ashby
+    name: "Absorb LMS"
+    slug: "absorblms"    # verified: 29 postings
+
+  - type: greenhouse
+    name: "AppDirect"
+    slug: "appdirect"    # verified: 66 postings
+
+  - type: lever
+    name: "Apryse"
+    slug: "apryse"    # verified: 1 postings
+
+  - type: lever
+    name: "BenchSci"
+    slug: "benchsci"    # verified: 1 postings
+
+  - type: ashby
+    name: "Clearco"
+    slug: "clearco"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "D2L"
+    slug: "d2l"    # verified: 22 postings
+
+  - type: lever
+    name: "Deep Genomics"
+    slug: "deepgenomics"    # verified: 2 postings
+
+  - type: ashby
+    name: "Docebo"
+    slug: "docebo"    # verified: 51 postings
+
+  - type: ashby
+    name: "Float"
+    slug: "float"    # verified: 17 postings
+
+  - type: lever
+    name: "Fullscript"
+    slug: "fullscript"    # verified: 21 postings
+
+  - type: greenhouse
+    name: "Geotab"
+    slug: "geotab"    # verified: 111 postings
+
+  - type: greenhouse
+    name: "Hootsuite"
+    slug: "hootsuite"    # verified: 19 postings
+
+  - type: ashby
+    name: "Hopper"
+    slug: "hopper"    # verified: 27 postings
+
+  - type: greenhouse
+    name: "Hut 8"
+    slug: "hut8"    # verified: 42 postings
+
+  - type: greenhouse
+    name: "Jamf"
+    slug: "jamf"    # verified: 33 postings
+
+  - type: ashby
+    name: "Jane Software"
+    slug: "jane"    # verified: 24 postings
+
+  - type: ashby
+    name: "Jobber"
+    slug: "jobber"    # verified: 41 postings
+
+  - type: ashby
+    name: "Klue"
+    slug: "klue"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Knak"
+    slug: "knak"    # verified: 3 postings
+
+  - type: ashby
+    name: "KOHO"
+    slug: "koho"    # verified: 12 postings
+
+  - type: ashby
+    name: "Lightspeed Commerce"
+    slug: "lightspeed"    # verified: 5 postings
+
+  - type: lever
+    name: "Magnet Forensics"
+    slug: "magnetforensics"    # verified: 48 postings
+
+  - type: ashby
+    name: "Neo Financial"
+    slug: "neofinancial"    # verified: 103 postings
+
+  - type: greenhouse
+    name: "PagerDuty"
+    slug: "pagerduty"    # verified: 18 postings
+
+  - type: lever
+    name: "Paytm"
+    slug: "paytm"    # verified: 238 postings
+
+  - type: lever
+    name: "PointClickCare"
+    slug: "pointclickcare"    # verified: 91 postings
+
+  - type: ashby
+    name: "Procurify"
+    slug: "procurify"    # verified: 10 postings
+
+  - type: ashby
+    name: "Propel Holdings"
+    slug: "propel"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Recursion Pharmaceuticals"
+    slug: "recursionpharmaceuticals"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Riot Games"
+    slug: "riotgames"    # verified: 162 postings
+
+  - type: greenhouse
+    name: "Ritual"
+    slug: "ritual"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Thinkific"
+    slug: "thinkific"    # verified: 3 postings
+
+  - type: ashby
+    name: "Trulioo"
+    slug: "trulioo"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Tucows"
+    slug: "tucows"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Unbounce"
+    slug: "unbounce"    # verified: 1 postings
+
+  - type: ashby
+    name: "Visier"
+    slug: "visier"    # verified: 7 postings
+
+  - type: lever
+    name: "Wattpad"
+    slug: "wattpad"    # verified: 25 postings
+
+  # ---------------------------------------------------------------------------
+  # Canadian banks (added after the Greenhouse/Lever/Ashby sweep)
+  # ---------------------------------------------------------------------------
+  - type: workday
+    name: "CIBC"
+    tenant: "cibc"
+    host: "wd3"
+    # The /campus site from CIBC's student page holds only 3 application
+    # portals ("Referred Student Portal", "Join our Talent Community"), none
+    # of which are real postings. "Search" is the actual board: 566 jobs.
+    site: "Search"
+
+  - type: auto
+    name: "National Bank of Canada"
+    url: "https://emplois.bnc.ca/en_CA/careers/searchjobs/?3282=61&3282_format=1822&listFilterMode=1&jobRecordsPerPage=20"
+    # Avature-backed (same URL shape as Bloomberg's board). No dedicated type,
+    # so auto falls through to the browser scrape - verified: 5 postings, all
+    # genuine intern roles.
+
+  # ===========================================================================
+  # 2026-08-09 sweep - candidate companies probed against the board APIs
+  # ===========================================================================
+  # Built the same way as the two verified blocks above, just much wider: a
+  # candidate list of companies matching the profile in docs/CANDIDATE_PROFILE
+  # .md (AI/ML, data, fintech, health, big consumer brands, Canadian
+  # employers) was probed slug-by-slug against the Greenhouse, Lever and Ashby
+  # APIs. Roughly a third answered; the rest are not on those platforms and
+  # were dropped rather than left in as guesses.
+  #
+  # Every entry below returned at least one real posting AND passed an
+  # identity check - the board's own name was read back (Greenhouse board
+  # metadata, the Lever/Ashby board page title) and compared against the
+  # company it was meant to be. That check matters: greenhouse/sas answers
+  # with postings, but the board belongs to Superior Alarm Systems, and
+  # greenhouse/purestorage belongs to Everpure. Fifteen such impostors were
+  # found and are not here.
+  #
+  # "verified: N postings" is the whole board, not the intern subset - the
+  # keyword, degree and location filters still do their usual work downstream.
+
+  # ---------------------------------------------------------------------------
+  # AI labs, ML infrastructure, data platforms and dev-facing data tools
+  # ---------------------------------------------------------------------------
+  - type: greenhouse
+    name: "6sense"
+    slug: "6sense"    # verified: 31 postings
+
+  - type: ashby
+    name: "Adaptive ML"
+    slug: "adaptive"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "Alpaca"
+    slug: "alpaca"    # verified: 62 postings
+
+  - type: ashby
+    name: "Anyscale"
+    slug: "anyscale"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Apollo.io"
+    slug: "apolloio"    # verified: 40 postings
+
+  - type: lever
+    name: "Appen"
+    slug: "appen"    # verified: 39 postings
+
+  - type: ashby
+    name: "Astronomer"
+    slug: "astronomer"    # verified: 29 postings
+
+  - type: lever
+    name: "Ataccama"
+    slug: "ataccama"    # verified: 11 postings
+
+  - type: ashby
+    name: "Atlan"
+    slug: "atlan"    # verified: 5 postings
+
+  - type: ashby
+    name: "Baseten"
+    slug: "baseten"    # verified: 65 postings
+
+  - type: greenhouse
+    name: "BigID"
+    slug: "bigid"    # verified: 10 postings
+
+  - type: ashby
+    name: "Braintrust"
+    slug: "braintrust"    # verified: 24 postings
+
+  - type: ashby
+    name: "Cerebras Systems"
+    slug: "cerebras"    # verified: 123 postings
+
+  - type: lever
+    name: "Certik"
+    slug: "certik"    # verified: 32 postings
+
+  - type: ashby
+    name: "Character AI"
+    slug: "character"    # verified: 13 postings
+
+  - type: ashby
+    name: "Chroma"
+    slug: "trychroma"    # verified: 1 postings
+
+  - type: ashby
+    name: "Cognition AI"
+    slug: "cognition"    # verified: 84 postings
+
+  - type: greenhouse
+    name: "Collibra"
+    slug: "collibra"    # verified: 36 postings
+
+  - type: greenhouse
+    name: "Comet ML"
+    slug: "comet"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Commvault"
+    slug: "commvault"    # verified: 75 postings
+
+  - type: greenhouse
+    name: "CoreWeave"
+    slug: "coreweave"    # verified: 269 postings
+
+  - type: ashby
+    name: "Craft Docs"
+    slug: "craftdocs"    # verified: 3 postings
+
+  - type: ashby
+    name: "Crusoe Energy"
+    slug: "crusoe"    # verified: 365 postings
+
+  - type: ashby
+    name: "Cube Dev"
+    slug: "cube"    # verified: 35 postings
+
+  - type: ashby
+    name: "d-Matrix"
+    slug: "d-matrix"    # verified: 38 postings
+
+  - type: greenhouse
+    name: "Databento"
+    slug: "databento"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "DataHub (Acryl Data)"
+    slug: "acryldata"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Dataiku"
+    slug: "dataiku"    # verified: 21 postings
+
+  - type: ashby
+    name: "DDN"
+    slug: "ddn"    # verified: 96 postings
+
+  - type: ashby
+    name: "Deepnote"
+    slug: "deepnote"    # verified: 4 postings
+
+  - type: ashby
+    name: "Demandbase"
+    slug: "demandbase"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "Descript"
+    slug: "descript"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Domino Data Lab"
+    slug: "dominodatalab"    # verified: 15 postings
+
+  - type: ashby
+    name: "Dune Analytics"
+    slug: "dune"    # verified: 3 postings
+
+  - type: ashby
+    name: "Elicit"
+    slug: "elicit"    # verified: 10 postings
+
+  - type: ashby
+    name: "Elliptic"
+    slug: "elliptic"    # verified: 33 postings
+
+  - type: ashby
+    name: "Encord"
+    slug: "encord"    # verified: 32 postings
+
+  - type: ashby
+    name: "Etched"
+    slug: "etched"    # verified: 109 postings
+
+  - type: ashby
+    name: "Evervault"
+    slug: "evervault"    # verified: 3 postings
+
+  - type: ashby
+    name: "Fireworks AI"
+    slug: "fireworks"    # verified: 58 postings
+
+  - type: greenhouse
+    name: "Gradient AI"
+    slug: "gradientai"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Graphcore"
+    slug: "graphcore"    # verified: 215 postings
+
+  - type: ashby
+    name: "Hex Technologies"
+    slug: "hex"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "HeyGen"
+    slug: "heygen"    # verified: 21 postings
+
+  - type: greenhouse
+    name: "Imbue"
+    slug: "imbue"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Immunefi"
+    slug: "immunefi"    # verified: 2 postings
+
+  - type: lever
+    name: "Immuta"
+    slug: "immuta"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Imply"
+    slug: "imply"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Inflection AI"
+    slug: "inflectionai"    # verified: 6 postings
+
+  - type: ashby
+    name: "InfluxData"
+    slug: "influxdata"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Invisible Technologies"
+    slug: "invisible"    # verified: 5 postings
+
+  - type: ashby
+    name: "Lambda Labs"
+    slug: "lambda"    # verified: 67 postings
+
+  - type: ashby
+    name: "LangChain"
+    slug: "langchain"    # verified: 101 postings
+
+  - type: ashby
+    name: "Lightdash"
+    slug: "lightdash"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Lightning AI"
+    slug: "lightningai"    # verified: 44 postings
+
+  - type: ashby
+    name: "LlamaIndex"
+    slug: "llamaindex"    # verified: 15 postings
+
+  - type: lever
+    name: "LogRocket"
+    slug: "logrocket"    # verified: 6 postings
+
+  - type: ashby
+    name: "Luma AI"
+    slug: "lumaai"    # verified: 49 postings
+
+  - type: ashby
+    name: "Materialize"
+    slug: "materialize"    # verified: 5 postings
+
+  - type: lever
+    name: "Matillion"
+    slug: "matillion"    # verified: 22 postings
+
+  - type: ashby
+    name: "Mercor"
+    slug: "mercor"    # verified: 80 postings
+
+  - type: lever
+    name: "Merkle Science"
+    slug: "merklescience"    # verified: 25 postings
+
+  - type: lever
+    name: "Metabase"
+    slug: "metabase"    # verified: 18 postings
+
+  - type: ashby
+    name: "Midjourney"
+    slug: "midjourney"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "MinIO"
+    slug: "minio"    # verified: 21 postings
+
+  - type: ashby
+    name: "Modal Labs"
+    slug: "modal"    # verified: 31 postings
+
+  - type: greenhouse
+    name: "Nansen"
+    slug: "nansen"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Nebius"
+    slug: "nebius"    # verified: 359 postings
+
+  - type: lever
+    name: "Neon"
+    slug: "neon"    # verified: 14 postings
+
+  - type: ashby
+    name: "Neptune AI"
+    slug: "neptune"    # verified: 4 postings
+
+  - type: ashby
+    name: "Notion"
+    slug: "notion"    # verified: 127 postings
+
+  - type: ashby
+    name: "Omni Analytics"
+    slug: "omni"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "OneTrust"
+    slug: "onetrust"    # verified: 90 postings
+
+  - type: greenhouse
+    name: "OpenZeppelin"
+    slug: "openzeppelin"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Otter.ai"
+    slug: "otterai"    # verified: 32 postings
+
+  - type: greenhouse
+    name: "Pendo"
+    slug: "pendo"    # verified: 39 postings
+
+  - type: ashby
+    name: "Perplexity AI"
+    slug: "perplexity"    # verified: 92 postings
+
+  - type: greenhouse
+    name: "PlanetScale"
+    slug: "planetscale"    # verified: 9 postings
+
+  - type: ashby
+    name: "Poolside"
+    slug: "poolside"    # verified: 16 postings
+
+  - type: ashby
+    name: "PostHog"
+    slug: "posthog"    # verified: 11 postings
+
+  - type: ashby
+    name: "Prefect"
+    slug: "prefect"    # verified: 6 postings
+
+  - type: ashby
+    name: "Rain AI"
+    slug: "rain"    # verified: 44 postings
+
+  - type: ashby
+    name: "Reflection AI"
+    slug: "reflectionai"    # verified: 61 postings
+
+  - type: greenhouse
+    name: "Regie AI"
+    slug: "regie"    # verified: 1 postings
+
+  - type: ashby
+    name: "Rev"
+    slug: "rev"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Rubrik"
+    slug: "rubrik"    # verified: 106 postings
+
+  - type: greenhouse
+    name: "SambaNova Systems"
+    slug: "sambanovasystems"    # verified: 29 postings
+
+  - type: ashby
+    name: "Skyflow"
+    slug: "skyflow"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "StarTree"
+    slug: "startree"    # verified: 1 postings
+
+  - type: ashby
+    name: "Supabase"
+    slug: "supabase"    # verified: 58 postings
+
+  - type: lever
+    name: "SuperAnnotate"
+    slug: "superannotate"    # verified: 5 postings
+
+  - type: ashby
+    name: "Synthesia"
+    slug: "synthesia"    # verified: 71 postings
+
+  - type: greenhouse
+    name: "Tenstorrent"
+    slug: "tenstorrent"    # verified: 127 postings
+
+  - type: ashby
+    name: "Thinking Machines Lab"
+    slug: "thinkingmachines"    # verified: 35 postings
+
+  - type: lever
+    name: "Tinybird"
+    slug: "tinybird"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Together AI"
+    slug: "togetherai"    # verified: 59 postings
+
+  - type: greenhouse
+    name: "Toloka"
+    slug: "toloka"    # verified: 13 postings
+
+  - type: lever
+    name: "Tonic AI"
+    slug: "tonic"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Transform Data"
+    slug: "transform"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Turing"
+    slug: "turing"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Typeface"
+    slug: "typeface"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Vast Data"
+    slug: "vast"    # verified: 166 postings
+
+  - type: greenhouse
+    name: "Vectara"
+    slug: "vectara"    # verified: 3 postings
+
+  - type: lever
+    name: "Very Good Security (VGS)"
+    slug: "verygoodsecurity"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "You.com"
+    slug: "youcom"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Yugabyte"
+    slug: "yugabyte"    # verified: 17 postings
+
+  - type: lever
+    name: "Zilliz"
+    slug: "zilliz"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "ZoomInfo"
+    slug: "zoominfo"    # verified: 102 postings
+
+  # ---------------------------------------------------------------------------
+  # Fintech, banking, insurance, crypto, trading and asset management
+  # ---------------------------------------------------------------------------
+  - type: ashby
+    name: "Abacum"
+    slug: "abacum"    # verified: 22 postings
+
+  - type: greenhouse
+    name: "Adyen"
+    slug: "adyen"    # verified: 217 postings
+
+  - type: ashby
+    name: "Airwallex"
+    slug: "airwallex"    # verified: 631 postings
+
+  - type: greenhouse
+    name: "Akoya"
+    slug: "akoya"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Akuna Capital"
+    slug: "akunacapital"    # verified: 34 postings
+
+  - type: ashby
+    name: "Alan"
+    slug: "alan"    # verified: 93 postings
+
+  - type: greenhouse
+    name: "Alloy"
+    slug: "alloy"    # verified: 21 postings
+
+  - type: greenhouse
+    name: "Anaplan"
+    slug: "anaplan"    # verified: 159 postings
+
+  - type: greenhouse
+    name: "AQR Capital"
+    slug: "aqr"    # verified: 47 postings
+
+  - type: lever
+    name: "Belvedere Trading"
+    slug: "belvederetrading"    # verified: 15 postings
+
+  - type: ashby
+    name: "Bestow"
+    slug: "bestow"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Bill.com"
+    slug: "billcom"    # verified: 50 postings
+
+  - type: greenhouse
+    name: "BitGo"
+    slug: "bitgo"    # verified: 33 postings
+
+  - type: greenhouse
+    name: "Bitpanda"
+    slug: "bitpanda"    # verified: 46 postings
+
+  - type: greenhouse
+    name: "Bitso"
+    slug: "bitso"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Blend Labs"
+    slug: "blend"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Block"
+    slug: "block"    # verified: 200 postings
+
+  - type: greenhouse
+    name: "Blockchain.com"
+    slug: "blockchain"    # verified: 36 postings
+
+  - type: ashby
+    name: "Blockdaemon"
+    slug: "blockdaemon"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Branch Insurance"
+    slug: "branch"    # verified: 10 postings
+
+  - type: ashby
+    name: "Brigit"
+    slug: "brigit"    # verified: 22 postings
+
+  - type: greenhouse
+    name: "Bybit"
+    slug: "bybit"    # verified: 144 postings
+
+  - type: greenhouse
+    name: "Chicago Trading Company (CTC)"
+    slug: "chicagotrading"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "Clover Health"
+    slug: "cloverhealth"    # verified: 71 postings
+
+  - type: greenhouse
+    name: "Coalition"
+    slug: "coalition"    # verified: 37 postings
+
+  - type: ashby
+    name: "Codat"
+    slug: "codat"    # verified: 5 postings
+
+  - type: ashby
+    name: "Column"
+    slug: "column"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "ComplyAdvantage"
+    slug: "complyadvantage"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Consensys"
+    slug: "consensys"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Copper"
+    slug: "copperco"    # verified: 4 postings
+
+  - type: lever
+    name: "Coupa"
+    slug: "coupa"    # verified: 91 postings
+
+  - type: lever
+    name: "Crypto.com"
+    slug: "crypto"    # verified: 21 postings
+
+  - type: ashby
+    name: "Cube Software"
+    slug: "cubesoftware"    # verified: 4 postings
+
+  - type: ashby
+    name: "DailyPay"
+    slug: "dailypay"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Earnin"
+    slug: "earnin"    # verified: 31 postings
+
+  - type: greenhouse
+    name: "Ethos Life"
+    slug: "ethoslife"    # verified: 57 postings
+
+  - type: greenhouse
+    name: "ExodusPoint"
+    slug: "exoduspoint"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Feedzai"
+    slug: "feedzai"    # verified: 34 postings
+
+  - type: greenhouse
+    name: "Figment"
+    slug: "figment"    # verified: 1 postings
+
+  - type: lever
+    name: "FloQast"
+    slug: "floqast"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Flow Traders"
+    slug: "flowtraders"    # verified: 42 postings
+
+  - type: greenhouse
+    name: "Forter"
+    slug: "forter"    # verified: 43 postings
+
+  - type: greenhouse
+    name: "General Atlantic"
+    slug: "generalatlantic"    # verified: 15 postings
+
+  - type: lever
+    name: "GMO"
+    slug: "gmo"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Happy Money"
+    slug: "happymoney"    # verified: 2 postings
+
+  - type: ashby
+    name: "Hawk AI"
+    slug: "hawk"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "IMC Trading"
+    slug: "imc"    # verified: 165 postings
+
+  - type: greenhouse
+    name: "Insurify"
+    slug: "insurify"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Jane Street"
+    slug: "janestreet"    # verified: 230 postings
+
+  - type: greenhouse
+    name: "Jumio"
+    slug: "jumio"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "Jump Trading"
+    slug: "jumptrading"    # verified: 104 postings
+
+  - type: greenhouse
+    name: "Justworks"
+    slug: "justworks"    # verified: 95 postings
+
+  - type: ashby
+    name: "Kin Insurance"
+    slug: "kin"    # verified: 22 postings
+
+  - type: ashby
+    name: "Ladder"
+    slug: "ladder"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Lithic"
+    slug: "lithic"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Man Group"
+    slug: "mangroup"    # verified: 60 postings
+
+  - type: greenhouse
+    name: "Melio"
+    slug: "melio"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Mercury"
+    slug: "mercury"    # verified: 55 postings
+
+  - type: ashby
+    name: "Merge"
+    slug: "merge"    # verified: 20 postings
+
+  - type: lever
+    name: "MetLife"
+    slug: "metlife"    # verified: 39 postings
+
+  - type: ashby
+    name: "Modern Treasury"
+    slug: "moderntreasury"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Monzo"
+    slug: "monzo"    # verified: 77 postings
+
+  - type: ashby
+    name: "Mosaic"
+    slug: "mosaic"    # verified: 6 postings
+
+  - type: ashby
+    name: "Moss"
+    slug: "moss"    # verified: 35 postings
+
+  - type: greenhouse
+    name: "N26"
+    slug: "n26"    # verified: 91 postings
+
+  - type: lever
+    name: "Nium"
+    slug: "nium"    # verified: 39 postings
+
+  - type: ashby
+    name: "Novo"
+    slug: "novo"    # verified: 7 postings
+
+  - type: ashby
+    name: "Nubank"
+    slug: "nubank"    # verified: 109 postings
+
+  - type: ashby
+    name: "Numeric"
+    slug: "numeric"    # verified: 21 postings
+
+  - type: ashby
+    name: "Nylas"
+    slug: "nylas"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "OKX"
+    slug: "okx"    # verified: 333 postings
+
+  - type: greenhouse
+    name: "Old Mission Capital"
+    slug: "oldmissioncapital"    # verified: 34 postings
+
+  - type: ashby
+    name: "Openly"
+    slug: "openly"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Oportun"
+    slug: "oportun"    # verified: 35 postings
+
+  - type: greenhouse
+    name: "Oscar Health"
+    slug: "oscar"    # verified: 269 postings
+
+  - type: ashby
+    name: "Oyster HR"
+    slug: "oyster"    # verified: 16 postings
+
+  - type: lever
+    name: "Payactiv"
+    slug: "payactiv"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Payoneer"
+    slug: "payoneer"    # verified: 126 postings
+
+  - type: greenhouse
+    name: "PDT Partners"
+    slug: "pdtpartners"    # verified: 10 postings
+
+  - type: ashby
+    name: "Persona"
+    slug: "persona"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Pie Insurance"
+    slug: "pieinsurance"    # verified: 19 postings
+
+  - type: lever
+    name: "Pigment"
+    slug: "pigment"    # verified: 96 postings
+
+  - type: ashby
+    name: "Pleo"
+    slug: "pleo"    # verified: 41 postings
+
+  - type: greenhouse
+    name: "Point72"
+    slug: "point72"    # verified: 231 postings
+
+  - type: lever
+    name: "Prosper Marketplace"
+    slug: "prosper"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Prove"
+    slug: "prove"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Public.com"
+    slug: "public"    # verified: 2 postings
+
+  - type: lever
+    name: "Qonto"
+    slug: "qonto"    # verified: 36 postings
+
+  - type: ashby
+    name: "Quantexa"
+    slug: "quantexa"    # verified: 32 postings
+
+  - type: ashby
+    name: "QuickNode"
+    slug: "quicknode"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Remote"
+    slug: "remote"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Riskified"
+    slug: "riskified"    # verified: 22 postings
+
+  - type: ashby
+    name: "Rutter"
+    slug: "rutter"    # verified: 1 postings
+
+  - type: ashby
+    name: "Sardine"
+    slug: "sardine"    # verified: 34 postings
+
+  - type: greenhouse
+    name: "Schonfeld"
+    slug: "schonfeld"    # verified: 53 postings
+
+  - type: greenhouse
+    name: "SeatGeek"
+    slug: "seatgeek"    # verified: 26 postings
+
+  - type: ashby
+    name: "Sift"
+    slug: "sift"    # verified: 9 postings
+
+  - type: ashby
+    name: "Socure"
+    slug: "socure"    # verified: 94 postings
+
+  - type: ashby
+    name: "Solana Labs"
+    slug: "solanalabs"    # verified: 1 postings
+
+  - type: ashby
+    name: "Stash"
+    slug: "stash"    # verified: 2 postings
+
+  - type: ashby
+    name: "Stellar Development Foundation"
+    slug: "stellar"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "Sumup"
+    slug: "sumup"    # verified: 378 postings
+
+  - type: lever
+    name: "Sure"
+    slug: "sure"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Thunes"
+    slug: "thunes"    # verified: 48 postings
+
+  - type: ashby
+    name: "Titan"
+    slug: "titan"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Toast"
+    slug: "toast"    # verified: 323 postings
+
+  - type: greenhouse
+    name: "Treasury Prime"
+    slug: "treasuryprime"    # verified: 1 postings
+
+  - type: ashby
+    name: "Uniswap Labs"
+    slug: "uniswap"    # verified: 6 postings
+
+  - type: ashby
+    name: "Unit"
+    slug: "unit"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Upstart"
+    slug: "upstart"    # verified: 97 postings
+
+  - type: greenhouse
+    name: "Veriff"
+    slug: "veriff"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Virtu Financial"
+    slug: "virtu"    # verified: 46 postings
+
+  - type: ashby
+    name: "Voleon Group"
+    slug: "voleon"    # verified: 56 postings
+
+  - type: greenhouse
+    name: "William Blair"
+    slug: "williamblair"    # verified: 46 postings
+
+  - type: greenhouse
+    name: "WorldQuant"
+    slug: "worldquant"    # verified: 100 postings
+
+  - type: ashby
+    name: "Zip"
+    slug: "zip"    # verified: 129 postings
+
+  # ---------------------------------------------------------------------------
+  # Health, biotech, life sciences and medtech - the regulated-data lane
+  # ---------------------------------------------------------------------------
+  - type: greenhouse
+    name: "10x Genomics"
+    slug: "10xgenomics"    # verified: 5 postings
+
+  - type: ashby
+    name: "Absci"
+    slug: "absci"    # verified: 3 postings
+
+  - type: ashby
+    name: "Ambience Healthcare"
+    slug: "ambiencehealthcare"    # verified: 20 postings
+
+  - type: lever
+    name: "Anomaly"
+    slug: "anomaly"    # verified: 1 postings
+
+  - type: lever
+    name: "Arcadia"
+    slug: "arcadia"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "BetterHelp"
+    slug: "betterhelp"    # verified: 202 postings
+
+  - type: greenhouse
+    name: "Butterfly Network"
+    slug: "butterflynetwork"    # verified: 31 postings
+
+  - type: ashby
+    name: "Candid Health"
+    slug: "candidhealth"    # verified: 35 postings
+
+  - type: lever
+    name: "Canvas Medical"
+    slug: "canvasmedical"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Cerebral"
+    slug: "cerebral"    # verified: 6 postings
+
+  - type: lever
+    name: "Clarify Health"
+    slug: "clarifyhealth"    # verified: 2 postings
+
+  - type: ashby
+    name: "CodaMetrix"
+    slug: "codametrix"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Cohere Health"
+    slug: "coherehealth"    # verified: 68 postings
+
+  - type: ashby
+    name: "Corti"
+    slug: "corti"    # verified: 7 postings
+
+  - type: ashby
+    name: "Cradle Bio"
+    slug: "cradlebio"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Dotmatics"
+    slug: "dotmatics"    # verified: 22 postings
+
+  - type: greenhouse
+    name: "Doximity"
+    slug: "doximity"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Elation Health"
+    slug: "elationhealth"    # verified: 15 postings
+
+  - type: lever
+    name: "Everly Health"
+    slug: "everlywell"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Flatiron Health"
+    slug: "flatironhealth"    # verified: 38 postings
+
+  - type: greenhouse
+    name: "Forward"
+    slug: "forward"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Garner Health"
+    slug: "garnerhealth"    # verified: 78 postings
+
+  - type: greenhouse
+    name: "Generate Biomedicines"
+    slug: "generatebiomedicines"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Ginkgo Bioworks"
+    slug: "ginkgobioworks"    # verified: 18 postings
+
+  - type: ashby
+    name: "Headway"
+    slug: "headway"    # verified: 73 postings
+
+  - type: ashby
+    name: "ICON plc"
+    slug: "icon"    # verified: 6 postings
+
+  - type: lever
+    name: "Included Health"
+    slug: "includedhealth"    # verified: 145 postings
+
+  - type: ashby
+    name: "Insitro"
+    slug: "insitro"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Isomorphic Labs"
+    slug: "isomorphiclabs"    # verified: 25 postings
+
+  - type: lever
+    name: "LeanTaaS"
+    slug: "leantaas"    # verified: 2 postings
+
+  - type: lever
+    name: "Lyra Health"
+    slug: "lyrahealth"    # verified: 525 postings
+
+  - type: ashby
+    name: "Metriport"
+    slug: "metriport"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Modern Health"
+    slug: "modernhealth"    # verified: 18 postings
+
+  - type: ashby
+    name: "Nabla"
+    slug: "nabla"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Natera"
+    slug: "natera"    # verified: 224 postings
+
+  - type: lever
+    name: "Nomi Health"
+    slug: "nomihealth"    # verified: 2 postings
+
+  - type: ashby
+    name: "Notable Health"
+    slug: "notable"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Omada Health"
+    slug: "omadahealth"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "One Medical"
+    slug: "onemedical"    # verified: 339 postings
+
+  - type: ashby
+    name: "Owkin"
+    slug: "owkin"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Parsley Health"
+    slug: "parsleyhealth"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "PathAI"
+    slug: "pathai"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Qventus"
+    slug: "qventus"    # verified: 24 postings
+
+  - type: ashby
+    name: "Rad AI"
+    slug: "radai"    # verified: 17 postings
+
+  - type: lever
+    name: "RapidAI"
+    slug: "rapidai"    # verified: 10 postings
+
+  - type: ashby
+    name: "Regard"
+    slug: "regard"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Relay Therapeutics"
+    slug: "relaytherapeutics"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Rightway"
+    slug: "rightway"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Suki AI"
+    slug: "suki"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Sword Health"
+    slug: "swordhealth"    # verified: 1 postings
+
+  - type: lever
+    name: "Synthego"
+    slug: "synthego"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Talkspace"
+    slug: "talkspace"    # verified: 10 postings
+
+  - type: ashby
+    name: "Tonal"
+    slug: "tonal"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Truveta"
+    slug: "truveta"    # verified: 40 postings
+
+  - type: greenhouse
+    name: "Twist Bioscience"
+    slug: "twistbioscience"    # verified: 32 postings
+
+  - type: greenhouse
+    name: "Valo Health"
+    slug: "valohealth"    # verified: 3 postings
+
+  - type: lever
+    name: "Veeva Systems"
+    slug: "veeva"    # verified: 824 postings
+
+  - type: greenhouse
+    name: "Verana Health"
+    slug: "veranahealth"    # verified: 7 postings
+
+  - type: ashby
+    name: "Virta Health"
+    slug: "virtahealth"    # verified: 18 postings
+
+  - type: ashby
+    name: "Wellsheet"
+    slug: "wellsheet"    # verified: 2 postings
+
+  - type: ashby
+    name: "Whoop"
+    slug: "whoop"    # verified: 178 postings
+
+  - type: greenhouse
+    name: "Zocdoc"
+    slug: "zocdoc"    # verified: 54 postings
+
+  - type: lever
+    name: "Zus Health"
+    slug: "zushealth"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Zwift"
+    slug: "zwift"    # verified: 5 postings
+
+  # ---------------------------------------------------------------------------
+  # Enterprise SaaS, security, developer tools, consumer tech and energy
+  # ---------------------------------------------------------------------------
+  - type: ashby
+    name: "1Password"
+    slug: "1password"    # verified: 61 postings
+
+  - type: greenhouse
+    name: "Abnormal Security"
+    slug: "abnormalsecurity"    # verified: 71 postings
+
+  - type: greenhouse
+    name: "AfterShip"
+    slug: "aftership"    # verified: 23 postings
+
+  - type: lever
+    name: "Aircall"
+    slug: "aircall"    # verified: 77 postings
+
+  - type: greenhouse
+    name: "Amperon"
+    slug: "amperon"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Archer"
+    slug: "archer"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Axonius"
+    slug: "axonius"    # verified: 31 postings
+
+  - type: greenhouse
+    name: "Backblaze"
+    slug: "backblaze"    # verified: 32 postings
+
+  - type: greenhouse
+    name: "BeyondTrust"
+    slug: "beyondtrust"    # verified: 54 postings
+
+  - type: greenhouse
+    name: "Bitwarden"
+    slug: "bitwarden"    # verified: 22 postings
+
+  - type: ashby
+    name: "Bubble"
+    slug: "bubble"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "Buildkite"
+    slug: "buildkite"    # verified: 8 postings
+
+  - type: ashby
+    name: "Bunny.net"
+    slug: "bunny"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "CallRail"
+    slug: "callrail"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "CarbonChain"
+    slug: "carbonchain"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Cato Networks"
+    slug: "catonetworks"    # verified: 125 postings
+
+  - type: greenhouse
+    name: "Censys"
+    slug: "censys"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Chainguard"
+    slug: "chainguard"    # verified: 81 postings
+
+  - type: lever
+    name: "Charm Industrial"
+    slug: "charmindustrial"    # verified: 10 postings
+
+  - type: ashby
+    name: "Checkly"
+    slug: "checkly"    # verified: 3 postings
+
+  - type: ashby
+    name: "Chili Piper"
+    slug: "chilipiper"    # verified: 3 postings
+
+  - type: ashby
+    name: "Chromatic (Storybook)"
+    slug: "chromatic"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "CircleCI"
+    slug: "circleci"    # verified: 7 postings
+
+  - type: ashby
+    name: "ClickUp"
+    slug: "clickup"    # verified: 67 postings
+
+  - type: lever
+    name: "Cloudinary"
+    slug: "cloudinary"    # verified: 28 postings
+
+  - type: greenhouse
+    name: "Cloverly"
+    slug: "cloverly"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Commercetools"
+    slug: "commercetools"    # verified: 21 postings
+
+  - type: greenhouse
+    name: "Cribl"
+    slug: "cribl"    # verified: 69 postings
+
+  - type: greenhouse
+    name: "Cypress"
+    slug: "cypressio"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Dashlane"
+    slug: "dashlane"    # verified: 15 postings
+
+  - type: ashby
+    name: "David Energy"
+    slug: "davidenergy"    # verified: 5 postings
+
+  - type: ashby
+    name: "Delinea"
+    slug: "delinea"    # verified: 72 postings
+
+  - type: greenhouse
+    name: "Descope"
+    slug: "descope"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Dialpad"
+    slug: "dialpad"    # verified: 91 postings
+
+  - type: greenhouse
+    name: "Diligent"
+    slug: "diligent"    # verified: 5 postings
+
+  - type: ashby
+    name: "Docker"
+    slug: "docker"    # verified: 57 postings
+
+  - type: greenhouse
+    name: "Dragos"
+    slug: "dragos"    # verified: 50 postings
+
+  - type: ashby
+    name: "Drata"
+    slug: "drata"    # verified: 55 postings
+
+  - type: greenhouse
+    name: "Exiger"
+    slug: "exiger"    # verified: 41 postings
+
+  - type: greenhouse
+    name: "Fastly"
+    slug: "fastly"    # verified: 49 postings
+
+  - type: ashby
+    name: "Fig"
+    slug: "fig"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Five9"
+    slug: "five9"    # verified: 153 postings
+
+  - type: greenhouse
+    name: "Flexe"
+    slug: "flexe"    # verified: 2 postings
+
+  - type: ashby
+    name: "Form Energy"
+    slug: "formenergy"    # verified: 185 postings
+
+  - type: greenhouse
+    name: "FourKites"
+    slug: "fourkites"    # verified: 16 postings
+
+  - type: ashby
+    name: "GitBook"
+    slug: "gitbook"    # verified: 2 postings
+
+  - type: ashby
+    name: "Gorgias"
+    slug: "gorgias"    # verified: 18 postings
+
+  - type: ashby
+    name: "Helion Energy"
+    slug: "helion"    # verified: 108 postings
+
+  - type: ashby
+    name: "Help Scout"
+    slug: "helpscout"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Honeycomb"
+    slug: "honeycomb"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "Huntress"
+    slug: "huntress"    # verified: 37 postings
+
+  - type: greenhouse
+    name: "Hyperproof"
+    slug: "hyperproof"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Invoca"
+    slug: "invoca"    # verified: 1 postings
+
+  - type: ashby
+    name: "Jellyfish"
+    slug: "jellyfish"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "JetBrains"
+    slug: "jetbrains"    # verified: 93 postings
+
+  - type: greenhouse
+    name: "JFrog"
+    slug: "jfrog"    # verified: 32 postings
+
+  - type: lever
+    name: "JumpCloud"
+    slug: "jumpcloud"    # verified: 18 postings
+
+  - type: greenhouse
+    name: "Keeper Security"
+    slug: "keepersecurity"    # verified: 64 postings
+
+  - type: ashby
+    name: "Kong"
+    slug: "kong"    # verified: 93 postings
+
+  - type: ashby
+    name: "Kustomer"
+    slug: "kustomer"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "LastPass"
+    slug: "lastpass"    # verified: 14 postings
+
+  - type: lever
+    name: "Level AI"
+    slug: "levelai"    # verified: 22 postings
+
+  - type: lever
+    name: "Loadsmart"
+    slug: "loadsmart"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "LogicGate"
+    slug: "logicgate"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "LogicMonitor"
+    slug: "logicmonitor"    # verified: 62 postings
+
+  - type: lever
+    name: "Loop Returns"
+    slug: "loopreturns"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Mabl"
+    slug: "mabl"    # verified: 3 postings
+
+  - type: ashby
+    name: "Material Security"
+    slug: "materialsecurity"    # verified: 6 postings
+
+  - type: ashby
+    name: "Mintlify"
+    slug: "mintlify"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Motive"
+    slug: "motive"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Narvar"
+    slug: "narvar"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Nauto"
+    slug: "nauto"    # verified: 4 postings
+
+  - type: lever
+    name: "Netomi"
+    slug: "netomi"    # verified: 29 postings
+
+  - type: greenhouse
+    name: "Netradyne"
+    slug: "netradyne"    # verified: 31 postings
+
+  - type: greenhouse
+    name: "Netskope"
+    slug: "netskope"    # verified: 141 postings
+
+  - type: greenhouse
+    name: "NICE"
+    slug: "nice"    # verified: 297 postings
+
+  - type: greenhouse
+    name: "Nozomi Networks"
+    slug: "nozominetworks"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "Observe.ai"
+    slug: "observeai"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Oklo"
+    slug: "oklo"    # verified: 64 postings
+
+  - type: greenhouse
+    name: "Orca Security"
+    slug: "orcasecurity"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Our Next Energy"
+    slug: "onenergy"    # verified: 56 postings
+
+  - type: greenhouse
+    name: "Patch"
+    slug: "patch"    # verified: 4 postings
+
+  - type: lever
+    name: "Perforce"
+    slug: "perforce"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Ping Identity"
+    slug: "pingidentity"    # verified: 57 postings
+
+  - type: greenhouse
+    name: "Platform Science"
+    slug: "platformscience"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "Postman"
+    slug: "postman"    # verified: 107 postings
+
+  - type: greenhouse
+    name: "project44"
+    slug: "project44"    # verified: 38 postings
+
+  - type: ashby
+    name: "QA Wolf"
+    slug: "qawolf"    # verified: 2 postings
+
+  - type: ashby
+    name: "Railway"
+    slug: "railway"    # verified: 8 postings
+
+  - type: ashby
+    name: "Rasa"
+    slug: "rasa"    # verified: 2 postings
+
+  - type: ashby
+    name: "ReadMe"
+    slug: "readme"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Recorded Future"
+    slug: "recordedfuture"    # verified: 40 postings
+
+  - type: greenhouse
+    name: "Redwood Materials"
+    slug: "redwoodmaterials"    # verified: 141 postings
+
+  - type: ashby
+    name: "Render"
+    slug: "render"    # verified: 34 postings
+
+  - type: greenhouse
+    name: "Route"
+    slug: "route"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "runZero"
+    slug: "runzero"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Sauce Labs"
+    slug: "saucelabs"    # verified: 10 postings
+
+  - type: lever
+    name: "Saviynt"
+    slug: "saviynt"    # verified: 112 postings
+
+  - type: greenhouse
+    name: "Sayari"
+    slug: "sayari"    # verified: 16 postings
+
+  - type: lever
+    name: "Scaleway"
+    slug: "scaleway"    # verified: 33 postings
+
+  - type: lever
+    name: "Secureframe"
+    slug: "secureframe"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "SecurityScorecard"
+    slug: "securityscorecard"    # verified: 55 postings
+
+  - type: ashby
+    name: "Semgrep"
+    slug: "semgrep"    # verified: 17 postings
+
+  - type: ashby
+    name: "Semperis"
+    slug: "semperis"    # verified: 22 postings
+
+  - type: ashby
+    name: "Sentry"
+    slug: "sentry"    # verified: 47 postings
+
+  - type: greenhouse
+    name: "Sila Nanotechnologies"
+    slug: "silananotechnologies"    # verified: 29 postings
+
+  - type: greenhouse
+    name: "SmartBear"
+    slug: "smartbear"    # verified: 26 postings
+
+  - type: greenhouse
+    name: "Smartsheet"
+    slug: "smartsheet"    # verified: 99 postings
+
+  - type: greenhouse
+    name: "SolarWinds"
+    slug: "solarwinds"    # verified: 85 postings
+
+  - type: greenhouse
+    name: "Solid Power"
+    slug: "solidpower"    # verified: 13 postings
+
+  - type: lever
+    name: "Sonar"
+    slug: "sonarsource"    # verified: 120 postings
+
+  - type: lever
+    name: "Sonatype"
+    slug: "sonatype"    # verified: 29 postings
+
+  - type: lever
+    name: "Sophos"
+    slug: "sophos"    # verified: 113 postings
+
+  - type: ashby
+    name: "Speakeasy"
+    slug: "speakeasy"    # verified: 5 postings
+
+  - type: ashby
+    name: "Stytch"
+    slug: "stytch"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Sunnova"
+    slug: "sunnova"    # verified: 2 postings
+
+  - type: ashby
+    name: "Swarmia"
+    slug: "swarmia"    # verified: 6 postings
+
+  - type: ashby
+    name: "Sweep"
+    slug: "sweep"    # verified: 7 postings
+
+  - type: ashby
+    name: "Sylvera"
+    slug: "sylvera"    # verified: 3 postings
+
+  - type: lever
+    name: "Sysdig"
+    slug: "sysdig"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Tailscale"
+    slug: "tailscale"    # verified: 59 postings
+
+  - type: ashby
+    name: "Twelve"
+    slug: "twelve"    # verified: 5 postings
+
+  - type: lever
+    name: "Twingate"
+    slug: "twingate"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Uber Freight"
+    slug: "uberfreight"    # verified: 92 postings
+
+  - type: ashby
+    name: "UpGuard"
+    slug: "upguard"    # verified: 16 postings
+
+  - type: ashby
+    name: "Vanta"
+    slug: "vanta"    # verified: 88 postings
+
+  - type: greenhouse
+    name: "Verra Mobility"
+    slug: "verramobility"    # verified: 47 postings
+
+  - type: lever
+    name: "Voltus"
+    slug: "voltus"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "VTEX"
+    slug: "vtex"    # verified: 30 postings
+
+  - type: ashby
+    name: "Vultr"
+    slug: "vultr"    # verified: 58 postings
+
+  - type: greenhouse
+    name: "Warp"
+    slug: "warp"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Wasabi"
+    slug: "wasabi"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Watershed"
+    slug: "watershed"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Webflow"
+    slug: "webflow"    # verified: 29 postings
+
+  - type: ashby
+    name: "WorkOS"
+    slug: "workos"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "Wrike"
+    slug: "wrike"    # verified: 82 postings
+
+  - type: ashby
+    name: "Zed Industries"
+    slug: "zed"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Zscaler"
+    slug: "zscaler"    # verified: 327 postings
+
+  # ---------------------------------------------------------------------------
+  # Large consumer brands, retail, media, gaming, industrials and aerospace
+  # ---------------------------------------------------------------------------
+  - type: lever
+    name: "AngelList (Wellfound)"
+    slug: "angellist"    # verified: 22 postings
+
+  - type: ashby
+    name: "Ashby"
+    slug: "ashby"    # verified: 58 postings
+
+  - type: ashby
+    name: "Babbel"
+    slug: "babbel"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Bandai Namco"
+    slug: "bandainamco"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Bark"
+    slug: "bark"    # verified: 2 postings
+
+  - type: ashby
+    name: "Brainly"
+    slug: "brainly"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Bungie"
+    slug: "bungie"    # verified: 2 postings
+
+  - type: ashby
+    name: "Cambly"
+    slug: "cambly"    # verified: 8 postings
+
+  - type: lever
+    name: "ChowNow"
+    slug: "chownow"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "CookUnity"
+    slug: "cookunity"    # verified: 143 postings
+
+  - type: greenhouse
+    name: "Coupang"
+    slug: "coupang"    # verified: 664 postings
+
+  - type: greenhouse
+    name: "DataCamp"
+    slug: "datacamp"    # verified: 30 postings
+
+  - type: ashby
+    name: "Deliveroo"
+    slug: "deliveroo"    # verified: 184 postings
+
+  - type: greenhouse
+    name: "Digital Extremes"
+    slug: "digitalextremes"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Dillard's"
+    slug: "dillards"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "DonorsChoose"
+    slug: "donorschoose"    # verified: 6 postings
+
+  - type: lever
+    name: "Educative"
+    slug: "educative"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Epic Games"
+    slug: "epicgames"    # verified: 161 postings
+
+  - type: greenhouse
+    name: "Everlane"
+    slug: "everlane"    # verified: 37 postings
+
+  - type: lever
+    name: "Extreme Networks"
+    slug: "extremenetworks"    # verified: 115 postings
+
+  - type: lever
+    name: "Factor"
+    slug: "factor"    # verified: 8 postings
+
+  - type: lever
+    name: "Farfetch"
+    slug: "farfetch"    # verified: 62 postings
+
+  - type: greenhouse
+    name: "Fieldwire"
+    slug: "fieldwire"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "Flex"
+    slug: "flex"    # verified: 43 postings
+
+  - type: greenhouse
+    name: "Gearbox Software"
+    slug: "gearbox"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "General Assembly"
+    slug: "generalassembly"    # verified: 29 postings
+
+  - type: greenhouse
+    name: "Ghost"
+    slug: "ghost"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "GOAT Group"
+    slug: "goatgroup"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "GoFundMe"
+    slug: "gofundme"    # verified: 41 postings
+
+  - type: greenhouse
+    name: "HackerRank"
+    slug: "hackerrank"    # verified: 32 postings
+
+  - type: ashby
+    name: "Handshake"
+    slug: "handshake"    # verified: 80 postings
+
+  - type: greenhouse
+    name: "HelloFresh"
+    slug: "hellofresh"    # verified: 344 postings
+
+  - type: greenhouse
+    name: "Home Chef"
+    slug: "homechef"    # verified: 38 postings
+
+  - type: ashby
+    name: "Improbable"
+    slug: "improbable"    # verified: 9 postings
+
+  - type: lever
+    name: "Jam City"
+    slug: "jamcity"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Karat"
+    slug: "karat"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Kickstarter"
+    slug: "kickstarter"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Krafton"
+    slug: "krafton"    # verified: 78 postings
+
+  - type: greenhouse
+    name: "Medium"
+    slug: "medium"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Mercari"
+    slug: "mercari"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Misfits Market"
+    slug: "misfitsmarket"    # verified: 83 postings
+
+  - type: greenhouse
+    name: "Naughty Dog"
+    slug: "naughtydog"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Newsela"
+    slug: "newsela"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Nintendo"
+    slug: "nintendo"    # verified: 53 postings
+
+  - type: lever
+    name: "Ollie"
+    slug: "myollie"    # verified: 2 postings
+
+  - type: lever
+    name: "Olo"
+    slug: "olo"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "On Running"
+    slug: "onrunning"    # verified: 340 postings
+
+  - type: ashby
+    name: "Osmo"
+    slug: "osmo"    # verified: 14 postings
+
+  - type: lever
+    name: "Plexus"
+    slug: "plexus"    # verified: 2 postings
+
+  - type: ashby
+    name: "Poshmark"
+    slug: "poshmark"    # verified: 25 postings
+
+  - type: ashby
+    name: "Preply"
+    slug: "preply"    # verified: 122 postings
+
+  - type: greenhouse
+    name: "Reformation"
+    slug: "reformation"    # verified: 130 postings
+
+  - type: greenhouse
+    name: "Rent the Runway"
+    slug: "renttherunway"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Rockstar Games"
+    slug: "rockstargames"    # verified: 72 postings
+
+  - type: lever
+    name: "Rover"
+    slug: "rover"    # verified: 24 postings
+
+  - type: greenhouse
+    name: "Scopely"
+    slug: "scopely"    # verified: 141 postings
+
+  - type: greenhouse
+    name: "SeekOut"
+    slug: "seekout"    # verified: 4 postings
+
+  - type: greenhouse
+    name: "Sezzle"
+    slug: "sezzle"    # verified: 148 postings
+
+  - type: greenhouse
+    name: "Shein"
+    slug: "shein"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Slice"
+    slug: "slice"    # verified: 45 postings
+
+  - type: lever
+    name: "Spotify"
+    slug: "spotify"    # verified: 103 postings
+
+  - type: ashby
+    name: "SpotOn"
+    slug: "spoton"    # verified: 73 postings
+
+  - type: greenhouse
+    name: "Springboard"
+    slug: "springboard"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "StockX"
+    slug: "stockx"    # verified: 29 postings
+
+  - type: ashby
+    name: "Substack"
+    slug: "substack"    # verified: 12 postings
+
+  - type: ashby
+    name: "Supercell"
+    slug: "supercell"    # verified: 35 postings
+
+  - type: greenhouse
+    name: "Sweetgreen"
+    slug: "sweetgreen"    # verified: 49 postings
+
+  - type: lever
+    name: "Symplicity"
+    slug: "symplicity"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Take-Two Interactive"
+    slug: "taketwo"    # verified: 32 postings
+
+  - type: greenhouse
+    name: "Thrive Market"
+    slug: "thrivemarket"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Vital Farms"
+    slug: "vitalfarms"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Wolt"
+    slug: "wolt"    # verified: 244 postings
+
+  # ---------------------------------------------------------------------------
+  # Canadian employers and companies with major Canadian offices
+  # ---------------------------------------------------------------------------
+  - type: greenhouse
+    name: "AbCellera"
+    slug: "abcellera"    # verified: 18 postings
+
+  - type: lever
+    name: "Achievers"
+    slug: "achievers"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "AlayaCare"
+    slug: "alayacare"    # verified: 23 postings
+
+  - type: lever
+    name: "AltaML"
+    slug: "altaml"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Aspect Biosystems"
+    slug: "aspectbiosystems"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Auto Trader Canada"
+    slug: "autotradercanada"    # verified: 30 postings
+
+  - type: ashby
+    name: "Benevity"
+    slug: "benevity"    # verified: 16 postings
+
+  - type: lever
+    name: "EQ Bank"
+    slug: "eqbank"    # verified: 78 postings
+
+  - type: greenhouse
+    name: "League"
+    slug: "leagueinc"    # verified: 11 postings
+
+  - type: ashby
+    name: "Maple"
+    slug: "maple"    # verified: 14 postings
+
+  - type: ashby
+    name: "Rewind AI"
+    slug: "rewind"    # verified: 2 postings
+
+  - type: lever
+    name: "RioCan"
+    slug: "riocan"    # verified: 12 postings
+
+  - type: ashby
+    name: "SkipTheDishes"
+    slug: "skip"    # verified: 12 postings
+
+  - type: ashby
+    name: "Solace"
+    slug: "solace"    # verified: 33 postings
+
+  - type: greenhouse
+    name: "StackAdapt"
+    slug: "stackadapt"    # verified: 92 postings
+
+  - type: lever
+    name: "Telesat"
+    slug: "telesat"    # verified: 59 postings
+
+  - type: greenhouse
+    name: "Valence Labs"
+    slug: "valencelabs"    # verified: 5 postings
+
+  - type: lever
+    name: "Wave (Wave HQ)"
+    slug: "waveapps"    # verified: 6 postings
+
+  # ---------------------------------------------------------------------------
+  # Second sweep - AI-native, data, deep tech, climate and mobility
+  # ---------------------------------------------------------------------------
+  - type: ashby
+    name: "1X Technologies"
+    slug: "1x"    # verified: 79 postings
+
+  - type: greenhouse
+    name: "ABBYY"
+    slug: "abbyy"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "AccuWeather"
+    slug: "accuweather"    # verified: 29 postings
+
+  - type: lever
+    name: "Actian"
+    slug: "actian"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Agility Robotics"
+    slug: "agilityrobotics"    # verified: 60 postings
+
+  - type: lever
+    name: "Agiloft"
+    slug: "agiloft"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Apptronik"
+    slug: "apptronik"    # verified: 82 postings
+
+  - type: ashby
+    name: "Astra Space"
+    slug: "astra"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "BlackSky"
+    slug: "blacksky"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "Bot Auto"
+    slug: "botauto"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Carbon Robotics"
+    slug: "carbonrobotics"    # verified: 15 postings
+
+  - type: ashby
+    name: "Causal"
+    slug: "causal"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Celigo"
+    slug: "celigo"    # verified: 28 postings
+
+  - type: ashby
+    name: "Coco Delivery"
+    slug: "cocodelivery"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Conga"
+    slug: "conga"    # verified: 45 postings
+
+  - type: greenhouse
+    name: "Divergent Technologies"
+    slug: "divergent"    # verified: 64 postings
+
+  - type: lever
+    name: "Docsumo"
+    slug: "docsumo"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Docugami"
+    slug: "docugami"    # verified: 7 postings
+
+  - type: ashby
+    name: "E.ON"
+    slug: "eon"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "EDB"
+    slug: "edb"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Epirus"
+    slug: "epirus"    # verified: 35 postings
+
+  - type: greenhouse
+    name: "Eve Legal"
+    slug: "eve"    # verified: 32 postings
+
+  - type: greenhouse
+    name: "Extend"
+    slug: "extend"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Figure AI"
+    slug: "figureai"    # verified: 127 postings
+
+  - type: lever
+    name: "Finch"
+    slug: "finch"    # verified: 11 postings
+
+  - type: ashby
+    name: "First Street Foundation"
+    slug: "firststreet"    # verified: 4 postings
+
+  - type: ashby
+    name: "GoodData"
+    slug: "gooddata"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Heart Aerospace"
+    slug: "heartaerospace"    # verified: 19 postings
+
+  - type: lever
+    name: "Hermeus"
+    slug: "hermeus"    # verified: 87 postings
+
+  - type: ashby
+    name: "Hyperscience"
+    slug: "hyperscience"    # verified: 2 postings
+
+  - type: ashby
+    name: "Iceye"
+    slug: "iceye"    # verified: 166 postings
+
+  - type: lever
+    name: "Incorta"
+    slug: "incorta"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Instabase"
+    slug: "instabase"    # verified: 5 postings
+
+  - type: lever
+    name: "Jupiter Intelligence"
+    slug: "jupiterintel"    # verified: 1 postings
+
+  - type: ashby
+    name: "Juro"
+    slug: "juro"    # verified: 2 postings
+
+  - type: ashby
+    name: "Legora"
+    slug: "legora"    # verified: 283 postings
+
+  - type: greenhouse
+    name: "Liquibase"
+    slug: "liquibase"    # verified: 7 postings
+
+  - type: lever
+    name: "Loft Orbital"
+    slug: "loftorbital"    # verified: 59 postings
+
+  - type: greenhouse
+    name: "Make"
+    slug: "make"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "May Mobility"
+    slug: "maymobility"    # verified: 45 postings
+
+  - type: greenhouse
+    name: "Momentus"
+    slug: "momentus"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Muon Space"
+    slug: "muonspace"    # verified: 73 postings
+
+  - type: ashby
+    name: "n8n"
+    slug: "n8n"    # verified: 39 postings
+
+  - type: ashby
+    name: "Nango"
+    slug: "nango"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Nanonets"
+    slug: "nanonets"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Nintex"
+    slug: "nintex"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "Overstory"
+    slug: "overstory"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "PandaDoc"
+    slug: "pandadoc"    # verified: 49 postings
+
+  - type: ashby
+    name: "Paragon"
+    slug: "paragon"    # verified: 2 postings
+
+  - type: lever
+    name: "Parallel Domain"
+    slug: "paralleldomain"    # verified: 9 postings
+
+  - type: ashby
+    name: "Percona"
+    slug: "percona"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Pivot Bio"
+    slug: "pivotbio"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Planet Labs"
+    slug: "planetlabs"    # verified: 80 postings
+
+  - type: greenhouse
+    name: "Prisma"
+    slug: "prisma"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Prismatic"
+    slug: "prismatic"    # verified: 2 postings
+
+  - type: ashby
+    name: "Reducto"
+    slug: "reducto"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "Rocket Lab"
+    slug: "rocketlab"    # verified: 403 postings
+
+  - type: ashby
+    name: "Saronic"
+    slug: "saronic"    # verified: 251 postings
+
+  - type: ashby
+    name: "Serve Robotics"
+    slug: "serverobotics"    # verified: 52 postings
+
+  - type: lever
+    name: "Shield AI"
+    slug: "shieldai"    # verified: 433 postings
+
+  - type: greenhouse
+    name: "Sisense"
+    slug: "sisense"    # verified: 6 postings
+
+  - type: ashby
+    name: "SkyWatch"
+    slug: "skywatch"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Slingshot Aerospace"
+    slug: "slingshotaerospace"    # verified: 3 postings
+
+  - type: lever
+    name: "SnapLogic"
+    slug: "snaplogic"    # verified: 14 postings
+
+  - type: ashby
+    name: "Solve Intelligence"
+    slug: "solveintelligence"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "SpaceX"
+    slug: "spacex"    # verified: 2154 postings
+
+  - type: greenhouse
+    name: "Spire Global"
+    slug: "spire"    # verified: 46 postings
+
+  - type: greenhouse
+    name: "Stratolaunch"
+    slug: "stratolaunch"    # verified: 58 postings
+
+  - type: greenhouse
+    name: "Torc Robotics"
+    slug: "torcrobotics"    # verified: 60 postings
+
+  - type: ashby
+    name: "Treeswift"
+    slug: "treeswift"    # verified: 17 postings
+
+  - type: lever
+    name: "Trellis Law"
+    slug: "trellis"    # verified: 5 postings
+
+  - type: ashby
+    name: "UiPath"
+    slug: "uipath"    # verified: 120 postings
+
+  - type: ashby
+    name: "Unstructured"
+    slug: "unstructured"    # verified: 6 postings
+
+  - type: greenhouse
+    name: "Ursa Major"
+    slug: "ursamajor"    # verified: 78 postings
+
+  - type: greenhouse
+    name: "Varda Space"
+    slug: "vardaspace"    # verified: 101 postings
+
+  - type: greenhouse
+    name: "Wayve"
+    slug: "wayve"    # verified: 107 postings
+
+  - type: greenhouse
+    name: "Wing"
+    slug: "wing"    # verified: 43 postings
+
+  - type: greenhouse
+    name: "Workato"
+    slug: "workato"    # verified: 158 postings
+
+  - type: ashby
+    name: "WunderGraph"
+    slug: "wundergraph"    # verified: 4 postings
+
+  # ---------------------------------------------------------------------------
+  # Venture-backed health-data, AI-agent, ML-infra and developer companies
+  # ---------------------------------------------------------------------------
+  - type: lever
+    name: "360Learning"
+    slug: "360learning"    # verified: 30 postings
+
+  - type: lever
+    name: "Acceldata"
+    slug: "acceldata"    # verified: 49 postings
+
+  - type: ashby
+    name: "Adonis"
+    slug: "adonis"    # verified: 8 postings
+
+  - type: ashby
+    name: "AKASA"
+    slug: "akasa"    # verified: 9 postings
+
+  - type: ashby
+    name: "Angle Health"
+    slug: "anglehealth"    # verified: 2 postings
+
+  - type: ashby
+    name: "Anomalo"
+    slug: "anomalo"    # verified: 1 postings
+
+  - type: ashby
+    name: "Anon"
+    slug: "anon"    # verified: 3 postings
+
+  - type: ashby
+    name: "Anterior"
+    slug: "anterior"    # verified: 4 postings
+
+  - type: ashby
+    name: "Antimetal"
+    slug: "antimetal"    # verified: 9 postings
+
+  - type: ashby
+    name: "Apella"
+    slug: "apella"    # verified: 2 postings
+
+  - type: ashby
+    name: "Apify"
+    slug: "apify"    # verified: 14 postings
+
+  - type: lever
+    name: "Apollo Research"
+    slug: "apolloresearch"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "Arcee AI"
+    slug: "arceeai"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Artisight"
+    slug: "artisight"    # verified: 1 postings
+
+  - type: ashby
+    name: "Assort Health"
+    slug: "assorthealth"    # verified: 34 postings
+
+  - type: ashby
+    name: "Atropos Health"
+    slug: "atroposhealth"    # verified: 1 postings
+
+  - type: ashby
+    name: "Attention"
+    slug: "attention"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Bicycle Health"
+    slug: "bicyclehealth"    # verified: 4 postings
+
+  - type: ashby
+    name: "Blacksmith"
+    slug: "blacksmith"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Boulder Care"
+    slug: "bouldercare"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Brave"
+    slug: "brave"    # verified: 13 postings
+
+  - type: ashby
+    name: "Browserbase"
+    slug: "browserbase"    # verified: 8 postings
+
+  - type: ashby
+    name: "Bunkerhill Health"
+    slug: "bunkerhillhealth"    # verified: 3 postings
+
+  - type: ashby
+    name: "Camunda"
+    slug: "camunda"    # verified: 34 postings
+
+  - type: ashby
+    name: "Centivo"
+    slug: "centivo"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "Charlie Health"
+    slug: "charliehealth"    # verified: 289 postings
+
+  - type: ashby
+    name: "Circleback"
+    slug: "circleback"    # verified: 11 postings
+
+  - type: ashby
+    name: "Clarify"
+    slug: "clarify"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Cleerly Health"
+    slug: "cleerlyhealth"    # verified: 16 postings
+
+  - type: ashby
+    name: "CloudZero"
+    slug: "cloudzero"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "Collective Health"
+    slug: "collectivehealth"    # verified: 15 postings
+
+  - type: ashby
+    name: "Datafold"
+    slug: "datafold"    # verified: 3 postings
+
+  - type: ashby
+    name: "Depot"
+    slug: "depot"    # verified: 2 postings
+
+  - type: lever
+    name: "Eko Health"
+    slug: "ekohealth"    # verified: 7 postings
+
+  - type: ashby
+    name: "Exa"
+    slug: "exa"    # verified: 44 postings
+
+  - type: ashby
+    name: "Finout"
+    slug: "finout"    # verified: 15 postings
+
+  - type: ashby
+    name: "Firecrawl"
+    slug: "firecrawl"    # verified: 17 postings
+
+  - type: greenhouse
+    name: "GiveWell"
+    slug: "givewell"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Glean Work"
+    slug: "gleanwork"    # verified: 106 postings
+
+  - type: greenhouse
+    name: "Goodfire"
+    slug: "goodfire"    # verified: 30 postings
+
+  - type: greenhouse
+    name: "Gradle (Develocity)"
+    slug: "gradle"    # verified: 5 postings
+
+  - type: ashby
+    name: "Granola"
+    slug: "granola"    # verified: 17 postings
+
+  - type: ashby
+    name: "Gravie"
+    slug: "gravie"    # verified: 26 postings
+
+  - type: greenhouse
+    name: "Guidde"
+    slug: "guidde"    # verified: 8 postings
+
+  - type: ashby
+    name: "Infinitus Systems"
+    slug: "infinitus"    # verified: 9 postings
+
+  - type: ashby
+    name: "Inngest"
+    slug: "inngest"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Interwell Health"
+    slug: "interwellhealth"    # verified: 10 postings
+
+  - type: ashby
+    name: "Kestra"
+    slug: "kestra"    # verified: 13 postings
+
+  - type: lever
+    name: "METR"
+    slug: "metr"    # verified: 5 postings
+
+  - type: lever
+    name: "Mindtickle"
+    slug: "mindtickle"    # verified: 23 postings
+
+  - type: ashby
+    name: "Namespace"
+    slug: "namespace"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Nexla"
+    slug: "nexla"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Nooks"
+    slug: "nooks"    # verified: 13 postings
+
+  - type: greenhouse
+    name: "Octave"
+    slug: "octave"    # verified: 26 postings
+
+  - type: greenhouse
+    name: "Octopus Deploy"
+    slug: "octopusdeploy"    # verified: 3 postings
+
+  - type: ashby
+    name: "OpenEvidence"
+    slug: "openevidence"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Ophelia"
+    slug: "ophelia"    # verified: 18 postings
+
+  - type: greenhouse
+    name: "Orkes"
+    slug: "orkes"    # verified: 20 postings
+
+  - type: lever
+    name: "Oxylabs"
+    slug: "oxylabs"    # verified: 51 postings
+
+  - type: greenhouse
+    name: "Parloa"
+    slug: "parloa"    # verified: 59 postings
+
+  - type: greenhouse
+    name: "Pelago"
+    slug: "pelago"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "PolyAI"
+    slug: "polyai"    # verified: 15 postings
+
+  - type: lever
+    name: "Porter"
+    slug: "porter"    # verified: 25 postings
+
+  - type: ashby
+    name: "Prime Intellect"
+    slug: "primeintellect"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "Range"
+    slug: "range"    # verified: 14 postings
+
+  - type: ashby
+    name: "Replicant"
+    slug: "replicant"    # verified: 8 postings
+
+  - type: ashby
+    name: "Restate"
+    slug: "restate"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Rialtic"
+    slug: "rialtic"    # verified: 2 postings
+
+  - type: ashby
+    name: "Rilla"
+    slug: "rilla"    # verified: 30 postings
+
+  - type: ashby
+    name: "Rula"
+    slug: "rula"    # verified: 37 postings
+
+  - type: ashby
+    name: "RunPod"
+    slug: "runpod"    # verified: 23 postings
+
+  - type: greenhouse
+    name: "Sage Bionetworks"
+    slug: "sagebionetworks"    # verified: 1 postings
+
+  - type: ashby
+    name: "Salient"
+    slug: "salient"    # verified: 12 postings
+
+  - type: lever
+    name: "Sana Benefits"
+    slug: "sanabenefits"    # verified: 3 postings
+
+  - type: ashby
+    name: "Scribe"
+    slug: "scribe"    # verified: 33 postings
+
+  - type: greenhouse
+    name: "Showpad"
+    slug: "showpad"    # verified: 34 postings
+
+  - type: greenhouse
+    name: "Sidecar Health"
+    slug: "sidecarhealth"    # verified: 11 postings
+
+  - type: ashby
+    name: "Sifflet"
+    slug: "sifflet"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Sirona Medical"
+    slug: "sironamedical"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "SmarterDx"
+    slug: "smarterdx"    # verified: 10 postings
+
+  - type: ashby
+    name: "SonderMind"
+    slug: "sondermind"    # verified: 138 postings
+
+  - type: ashby
+    name: "Spekit"
+    slug: "spekit"    # verified: 2 postings
+
+  - type: ashby
+    name: "Stedi"
+    slug: "stedi"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "Strive Health"
+    slug: "strivehealth"    # verified: 42 postings
+
+  - type: ashby
+    name: "Tango"
+    slug: "tango"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Tavily"
+    slug: "tavily"    # verified: 15 postings
+
+  - type: ashby
+    name: "Temporal"
+    slug: "temporal"    # verified: 55 postings
+
+  - type: ashby
+    name: "Tennr"
+    slug: "tennr"    # verified: 19 postings
+
+  - type: ashby
+    name: "Teton"
+    slug: "teton"    # verified: 21 postings
+
+  - type: ashby
+    name: "Tilde Research"
+    slug: "tilderesearch"    # verified: 3 postings
+
+  - type: ashby
+    name: "Trigger Dev"
+    slug: "triggerdev"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Two Chairs"
+    slug: "twochairs"    # verified: 92 postings
+
+  - type: ashby
+    name: "Validio"
+    slug: "validio"    # verified: 15 postings
+
+  - type: ashby
+    name: "Vantage"
+    slug: "vantage"    # verified: 7 postings
+
+  - type: ashby
+    name: "Vapi"
+    slug: "vapi"    # verified: 31 postings
+
+  - type: ashby
+    name: "Vast.ai"
+    slug: "vastai"    # verified: 15 postings
+
+  - type: ashby
+    name: "WarpBuild"
+    slug: "warpbuild"    # verified: 1 postings
+
+  - type: ashby
+    name: "Windmill"
+    slug: "windmill"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Workit Health"
+    slug: "workithealth"    # verified: 12 postings
+
+  # ---------------------------------------------------------------------------
+  # Marketplaces, consumer apps, proptech, mid-market SaaS and more fintech
+  # ---------------------------------------------------------------------------
+  - type: greenhouse
+    name: "AG1 (Athletic Greens)"
+    slug: "ag1"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Alarm.com"
+    slug: "alarmcom"    # verified: 88 postings
+
+  - type: lever
+    name: "AllTrails"
+    slug: "alltrails"    # verified: 1 postings
+
+  - type: ashby
+    name: "Arlo"
+    slug: "arlo"    # verified: 11 postings
+
+  - type: ashby
+    name: "Aven"
+    slug: "aven"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Blink Health"
+    slug: "blinkhealth"    # verified: 58 postings
+
+  - type: ashby
+    name: "Butterfly MX"
+    slug: "butterflymx"    # verified: 17 postings
+
+  - type: ashby
+    name: "Capsule"
+    slug: "capsule"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "CarGurus"
+    slug: "cargurus"    # verified: 50 postings
+
+  - type: greenhouse
+    name: "Caribou"
+    slug: "caribou"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Carvana"
+    slug: "carvana"    # verified: 1818 postings
+
+  - type: greenhouse
+    name: "ClassPass"
+    slug: "classpass"    # verified: 54 postings
+
+  - type: lever
+    name: "CrossFit"
+    slug: "crossfit"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Current"
+    slug: "current"    # verified: 6 postings
+
+  - type: lever
+    name: "Entrata"
+    slug: "entrata"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Fender"
+    slug: "fender"    # verified: 36 postings
+
+  - type: ashby
+    name: "Going"
+    slug: "going"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Homeward"
+    slug: "homeward"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "iFIT"
+    slug: "ifit"    # verified: 25 postings
+
+  - type: greenhouse
+    name: "Kayak"
+    slug: "kayak"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Knock"
+    slug: "knock"    # verified: 2 postings
+
+  - type: lever
+    name: "Latch"
+    slug: "latch"    # verified: 2 postings
+
+  - type: lever
+    name: "Lendbuzz"
+    slug: "lendbuzz"    # verified: 70 postings
+
+  - type: greenhouse
+    name: "Liquid IV"
+    slug: "liquidiv"    # verified: 24 postings
+
+  - type: lever
+    name: "Lodgify"
+    slug: "lodgify"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Lunar Energy"
+    slug: "lunarenergy"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Mindbody"
+    slug: "mindbody"    # verified: 20 postings
+
+  - type: greenhouse
+    name: "Momentous"
+    slug: "momentous"    # verified: 3 postings
+
+  - type: greenhouse
+    name: "Olly"
+    slug: "olly"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Orchard"
+    slug: "orchard"    # verified: 27 postings
+
+  - type: ashby
+    name: "Output"
+    slug: "output"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "Pacaso"
+    slug: "pacaso"    # verified: 2 postings
+
+  - type: lever
+    name: "Placemakr"
+    slug: "placemakr"    # verified: 24 postings
+
+  - type: ashby
+    name: "Polar Electro"
+    slug: "polar"    # verified: 5 postings
+
+  - type: lever
+    name: "PushPress"
+    slug: "pushpress"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Roofstock"
+    slug: "roofstock"    # verified: 52 postings
+
+  - type: greenhouse
+    name: "Signos"
+    slug: "signos"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "SimpliSafe"
+    slug: "simplisafe"    # verified: 45 postings
+
+  - type: greenhouse
+    name: "Skyscanner"
+    slug: "skyscanner"    # verified: 9 postings
+
+  - type: greenhouse
+    name: "SmartRent"
+    slug: "smartrent"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "SmartyPants Vitamins"
+    slug: "smartypantsvitamins"    # verified: 1 postings
+
+  - type: ashby
+    name: "Span"
+    slug: "span"    # verified: 35 postings
+
+  - type: greenhouse
+    name: "Splice"
+    slug: "splice"    # verified: 4 postings
+
+  - type: ashby
+    name: "Tekion"
+    slug: "tekion"    # verified: 71 postings
+
+  - type: greenhouse
+    name: "Tempo"
+    slug: "tempo"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Universal Audio"
+    slug: "universalaudio"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Upgrade"
+    slug: "upgrade"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Vega"
+    slug: "vega"    # verified: 1 postings
+
+  - type: lever
+    name: "Viome"
+    slug: "viome"    # verified: 4 postings
+
+  - type: ashby
+    name: "Zoe"
+    slug: "zoe"    # verified: 5 postings
+
+  # ---------------------------------------------------------------------------
+  # Media tooling, front-end/dev platforms, CRM, process and supply-chain software
+  # ---------------------------------------------------------------------------
+  - type: lever
+    name: "100ms"
+    slug: "100ms"    # verified: 10 postings
+
+  - type: ashby
+    name: "Aleph Alpha"
+    slug: "alephalpha"    # verified: 2 postings
+
+  - type: greenhouse
+    name: "Altana AI"
+    slug: "altanaai"    # verified: 16 postings
+
+  - type: greenhouse
+    name: "Appian"
+    slug: "appian"    # verified: 190 postings
+
+  - type: ashby
+    name: "Attio"
+    slug: "attio"    # verified: 42 postings
+
+  - type: greenhouse
+    name: "Bitmovin"
+    slug: "bitmovin"    # verified: 10 postings
+
+  - type: greenhouse
+    name: "Black Forest Labs"
+    slug: "blackforestlabs"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "Boulevard"
+    slug: "boulevard"    # verified: 15 postings
+
+  - type: greenhouse
+    name: "Bringg"
+    slug: "bringg"    # verified: 3 postings
+
+  - type: ashby
+    name: "Butter"
+    slug: "butter"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Celonis"
+    slug: "celonis"    # verified: 258 postings
+
+  - type: lever
+    name: "Circuit"
+    slug: "getcircuit"    # verified: 3 postings
+
+  - type: ashby
+    name: "Close"
+    slug: "close"    # verified: 7 postings
+
+  - type: greenhouse
+    name: "Fairmarkit"
+    slug: "fairmarkit"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "Fleetio"
+    slug: "fleetio"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Flourish"
+    slug: "flourish"    # verified: 4 postings
+
+  - type: lever
+    name: "Fresha"
+    slug: "fresha"    # verified: 153 postings
+
+  - type: ashby
+    name: "Gamma"
+    slug: "gamma"    # verified: 33 postings
+
+  - type: greenhouse
+    name: "Gather Town"
+    slug: "gather"    # verified: 1 postings
+
+  - type: lever
+    name: "Getty Images"
+    slug: "gettyimages"    # verified: 7 postings
+
+  - type: ashby
+    name: "HoneyBook"
+    slug: "honeybook"    # verified: 12 postings
+
+  - type: greenhouse
+    name: "Ivalua"
+    slug: "ivalua"    # verified: 39 postings
+
+  - type: lever
+    name: "Kapwing"
+    slug: "kapwing"    # verified: 1 postings
+
+  - type: ashby
+    name: "Levelpath"
+    slug: "levelpath"    # verified: 14 postings
+
+  - type: greenhouse
+    name: "Lucid Software"
+    slug: "lucidsoftware"    # verified: 41 postings
+
+  - type: greenhouse
+    name: "Lumen5"
+    slug: "lumen5"    # verified: 1 postings
+
+  - type: lever
+    name: "Mendix"
+    slug: "mendix"    # verified: 35 postings
+
+  - type: ashby
+    name: "Moxie"
+    slug: "moxie"    # verified: 7 postings
+
+  - type: ashby
+    name: "MUI (Material UI)"
+    slug: "mui"    # verified: 1 postings
+
+  - type: ashby
+    name: "Mural"
+    slug: "mural"    # verified: 9 postings
+
+  - type: ashby
+    name: "Mux"
+    slug: "mux"    # verified: 2 postings
+
+  - type: ashby
+    name: "Nash"
+    slug: "nash"    # verified: 24 postings
+
+  - type: ashby
+    name: "Nomic AI"
+    slug: "nomic"    # verified: 6 postings
+
+  - type: ashby
+    name: "Omnea"
+    slug: "omnea"    # verified: 43 postings
+
+  - type: ashby
+    name: "Opus Clip"
+    slug: "opusclip"    # verified: 8 postings
+
+  - type: ashby
+    name: "Photoroom"
+    slug: "photoroom"    # verified: 11 postings
+
+  - type: greenhouse
+    name: "PicsArt"
+    slug: "picsart"    # verified: 5 postings
+
+  - type: ashby
+    name: "Pika Labs"
+    slug: "pika"    # verified: 10 postings
+
+  - type: lever
+    name: "Pipedrive"
+    slug: "pipedrive"    # verified: 16 postings
+
+  - type: lever
+    name: "Portcast"
+    slug: "portcast"    # verified: 8 postings
+
+  - type: greenhouse
+    name: "Process Street"
+    slug: "processstreet"    # verified: 14 postings
+
+  - type: lever
+    name: "Resilinc"
+    slug: "resilinc"    # verified: 6 postings
+
+  - type: ashby
+    name: "Suno"
+    slug: "suno"    # verified: 62 postings
+
+  - type: ashby
+    name: "Timely"
+    slug: "timely"    # verified: 3 postings
+
+  - type: ashby
+    name: "tldraw"
+    slug: "tldraw"    # verified: 1 postings
+
+  - type: lever
+    name: "Topaz Labs"
+    slug: "topazlabs"    # verified: 7 postings
+
+  - type: ashby
+    name: "Twenty"
+    slug: "twenty"    # verified: 29 postings
+
+  - type: greenhouse
+    name: "Udio"
+    slug: "udio"    # verified: 5 postings
+
+  - type: ashby
+    name: "Ultralytics"
+    slug: "ultralytics"    # verified: 19 postings
+
+  - type: greenhouse
+    name: "Unqork"
+    slug: "unqork"    # verified: 2 postings
+
+  - type: lever
+    name: "Whereby"
+    slug: "whereby"    # verified: 1 postings
+
+  - type: ashby
+    name: "Wistia"
+    slug: "wistia"    # verified: 1 postings
+
+  - type: greenhouse
+    name: "Zencoder"
+    slug: "zencoder"    # verified: 5 postings
+
+  - type: greenhouse
+    name: "Zenoti"
+    slug: "zenoti"    # verified: 37 postings
+
+  # ===========================================================================
+  # 2026-08-09 sweep, part two - large employers found on Workday
+  # ===========================================================================
+  # The board-API sweep above can only reach companies small enough to use a
+  # startup ATS, which left out most of the brand-name employers this profile
+  # actually wants. Workday covers those, but its feed address has three parts
+  # (tenant, host, site) and none is guessable from the company name, so these
+  # were found by trying plausible combinations and keeping what answered.
+  #
+  # Each one was then read back: two real postings pulled off the board and
+  # checked against the employer they were meant to be. "verified: 20+" is the
+  # first page of results, not the board total - the fetcher pages through the
+  # rest on its own.
+  #
+  # Leidos answered here too and is deliberately NOT in the list: predominantly
+  # cleared US-government work, same reason CANDIDATE_PROFILE.md rules out
+  # Northrop Grumman and Booz Allen.
+
+  # ---------------------------------------------------------------------------
+  # Large employers on Workday - banks, insurers, pharma, industrials, retail, consulting
+  # ---------------------------------------------------------------------------
+  - type: workday
+    name: "Abbott"
+    tenant: "abbott"
+    host: "wd5"
+    site: "abbottcareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Accenture"
+    tenant: "accenture"
+    host: "wd103"
+    site: "AccentureCareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Agilent Technologies"
+    tenant: "agilent"
+    host: "wd5"
+    site: "Agilent_Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Allstate"
+    tenant: "allstate"
+    host: "wd5"
+    site: "allstate_careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Amgen"
+    tenant: "amgen"
+    host: "wd1"
+    site: "Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Chewy"
+    tenant: "chewy"
+    host: "wd5"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "Enbridge"
+    tenant: "enbridge"
+    host: "wd3"
+    site: "enbridge_careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Equifax"
+    tenant: "equifax"
+    host: "wd5"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "Etsy"
+    tenant: "etsy"
+    host: "wd5"
+    site: "Etsy_Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Gartner"
+    tenant: "gartner"
+    host: "wd5"
+    site: "EXT"    # verified: 20+ postings
+
+  - type: workday
+    name: "Gilead Sciences"
+    tenant: "gilead"
+    host: "wd1"
+    site: "gileadcareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "IQVIA"
+    tenant: "iqvia"
+    host: "wd1"
+    site: "IQVIA"    # verified: 20+ postings
+
+  - type: workday
+    name: "Magna International"
+    tenant: "magna"
+    host: "wd3"
+    site: "Magna"    # verified: 20+ postings
+
+  - type: workday
+    name: "Manulife"
+    tenant: "manulife"
+    host: "wd3"
+    site: "MFCJH_Jobs"    # verified: 20+ postings
+
+  - type: workday
+    name: "Marsh McLennan"
+    tenant: "mmc"
+    host: "wd1"
+    site: "MMC"    # verified: 20+ postings
+
+  - type: workday
+    name: "Medtronic"
+    tenant: "medtronic"
+    host: "wd1"
+    site: "MedtronicCareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Moderna"
+    tenant: "modernatx"
+    host: "wd1"
+    site: "M_tx"    # verified: 20+ postings
+
+  - type: workday
+    name: "Regeneron"
+    tenant: "regeneron"
+    host: "wd1"
+    site: "Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "S&P Global"
+    tenant: "spgi"
+    host: "wd5"
+    site: "SPGI_Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Stryker"
+    tenant: "stryker"
+    host: "wd1"
+    site: "StrykerCareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Target"
+    tenant: "target"
+    host: "wd5"
+    site: "targetcareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Thermo Fisher Scientific"
+    tenant: "thermofisher"
+    host: "wd5"
+    site: "thermofishercareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "TransUnion"
+    tenant: "transunion"
+    host: "wd5"
+    site: "TransUnion"    # verified: 20+ postings
+
+  - type: workday
+    name: "Travelers"
+    tenant: "travelers"
+    host: "wd5"
+    site: "External"    # verified: 20+ postings
+
+  # ---------------------------------------------------------------------------
+  # More large employers on Workday - found by the wider tenant/site sweep
+  # ---------------------------------------------------------------------------
+  # Second half of the Workday search: same method, same read-back check, just
+  # a broader grid of tenant and site guesses. Sun Life appears twice on
+  # purpose - the entry above points at its experienced-jobs board, this one at
+  # /Campus, which is where the new-grad and rotational programs are.
+  #
+  # Leidos and CACI both answered and are deliberately absent - cleared US
+  # government work, same call as Northrop Grumman and Booz Allen.
+
+  - type: workday
+    name: "3M"
+    tenant: "3m"
+    host: "wd1"
+    site: "Search"    # verified: 20+ postings
+
+  - type: workday
+    name: "AstraZeneca"
+    tenant: "astrazeneca"
+    host: "wd3"
+    site: "Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Cenovus Energy"
+    tenant: "cenovus"
+    host: "wd3"
+    site: "Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Dow"
+    tenant: "dow"
+    host: "wd1"
+    site: "externalcareers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Fair Isaac"
+    tenant: "fico"
+    host: "wd1"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "McKesson"
+    tenant: "mckesson"
+    host: "wd3"
+    site: "External_Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Morgan Stanley"
+    tenant: "ms"
+    host: "wd5"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "PNC Financial"
+    tenant: "pnc"
+    host: "wd5"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "Southwest Airlines"
+    tenant: "swa"
+    host: "wd1"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "Sun Life (Campus)"
+    tenant: "sunlife"
+    host: "wd3"
+    site: "Campus"    # verified: 2+ postings
+
+  - type: workday
+    name: "T-Mobile"
+    tenant: "tmobile"
+    host: "wd1"
+    site: "External"    # verified: 20+ postings
+
+  - type: workday
+    name: "Thomson Reuters"
+    tenant: "thomsonreuters"
+    host: "wd5"
+    site: "External_Career_Site"    # verified: 20+ postings
+
+  - type: workday
+    name: "Truist"
+    tenant: "truist"
+    host: "wd1"
+    site: "Careers"    # verified: 20+ postings
+
+  - type: workday
+    name: "Unisys"
+    tenant: "unisys"
+    host: "wd5"
+    site: "External"    # verified: 20+ postings
+
+# --- Quant/trading firms, added 2026-08-10 (sourced from NUFT 2027QuantInternships) ---
+
+  - type: lever
+    name: "Ansatz Capital"
+    slug: "ansatzcapital"
+
+  - type: auto
+    name: "AQR"
+    url: "https://careers.aqr.com/jobs/department/university-jobs"
+    query: "intern"
+
+  - type: greenhouse
+    name: "Aquatic Capital Management"
+    slug: "aquaticcapitalmanagement"
+
+  - type: workday
+    name: "Arrowstreet Capital"
+    tenant: "arrowstreetcapital"
+    host: "wd5"
+    site: "Campus_Careers"
+
+  - type: greenhouse
+    name: "Blackedge Capital"
+    slug: "blackedgecapital"
+
+  - type: auto
+    name: "Bridgewater Associates"
+    url: "https://www.bridgewater.com/working-at-bridgewater/job-openings"
+    query: "intern"
+
+  - type: auto
+    name: "Chicago Trading Company"
+    url: "https://www.chicagotrading.com/search#search-results"
+    query: "intern"
+
+  - type: auto
+    name: "Citadel Securities"
+    url: "https://www.citadelsecurities.com/careers/students/internships/"
+    query: "intern"
+
+  - type: auto
+    name: "Citadel"
+    url: "https://www.citadel.com/careers/open-opportunities/students/internships/"
+    query: "intern"
+
+  - type: auto
+    name: "Cubist Systematic Strategies (Point72)"
+    url: "https://careers.point72.com/?experience=internships"
+    query: "intern"
+
+  - type: auto
+    name: "D. E. Shaw"
+    url: "https://www.deshaw.com/careers/internships"
+    query: "intern"
+
+  - type: auto
+    name: "DRW"
+    url: "https://drw.com/work-at-drw/category/campus"
+    query: "intern"
+
+  - type: auto
+    name: "Five Rings"
+    url: "https://fiverings.com/careers"
+    query: "intern"
+
+  - type: auto
+    name: "G-Research"
+    url: "https://www.gresearch.co.uk/join-us/graduates/"
+    query: "intern"
+
+  - type: auto
+    name: "Geneva Trading"
+    url: "https://www.genevatrading.com/careers-open-positions/"
+    query: "intern"
+
+  - type: auto
+    name: "GSA Capital"
+    url: "https://www.gsacapital.com/?section=careers"
+    query: "intern"
+
+  - type: lever
+    name: "HAP Capital"
+    slug: "hap-capital"
+
+  - type: auto
+    name: "Headlands Technologies"
+    url: "https://www.headlandstech.com/careers/"
+    query: "intern"
+
+  - type: auto
+    name: "Hudson River Trading"
+    url: "https://www.hudsonrivertrading.com/careers/"
+    query: "intern"
+
+  - type: auto
+    name: "Mako Trading"
+    url: "https://www.mako.com/opportunities"
+    query: "intern"
+
+  - type: auto
+    name: "Marshall Wace"
+    url: "https://www.mwam.com/join-us/internships/"
+    query: "intern"
+
+  - type: auto
+    name: "Maven Securities"
+    url: "https://www.mavensecurities.com/jobs/"
+    query: "intern"
+
+  - type: auto
+    name: "Millennium Management"
+    url: "https://www.mlp.com/job-listings/"
+    query: "intern"
+
+  - type: auto
+    name: "Optiver"
+    url: "https://optiver.com/working-at-optiver/career-opportunities/"
+    query: "intern"
+
+  - type: auto
+    name: "Peak6"
+    url: "https://peak6.com/careers/?l=&q=intern"
+    query: "intern"
+
+  - type: auto
+    name: "QuantLab"
+    url: "https://www.quantlab.com/careers"
+    query: "intern"
+
+  - type: auto
+    name: "Renaissance Technologies"
+    url: "https://www.rentec.com/Careers.action?jobs=true"
+    query: "intern"
+
+  - type: auto
+    name: "SIG (Susquehanna)"
+    url: "https://careers.sig.com/intern-openings"
+    query: "intern"
+
+  - type: auto
+    name: "Squarepoint Capital"
+    url: "https://www.squarepoint-capital.com/early-careers"
+    query: "intern"
+
+  - type: auto
+    name: "Tower Research Capital"
+    url: "https://www.tower-research.com/open-positions"
+    query: "intern"
+
+  - type: auto
+    name: "TransMarket Group"
+    url: "https://www.transmarketgroup.com/careers"
+    query: "intern"
+
+  - type: auto
+    name: "TrexQuant"
+    url: "https://trexquant.com/careers"
+    query: "intern"
+
+  - type: greenhouse
+    name: "Tudor Investment Group"
+    slug: "tudorgroup"
+
+  - type: auto
+    name: "Two Sigma"
+    url: "https://careers.twosigma.com/careers/OpenRoles/"
+    query: "intern"
+
+  - type: auto
+    name: "Voleon"
+    url: "https://voleon.com/jobs/"
+    query: "intern"
+
+  - type: auto
+    name: "Voloridge"
+    url: "https://www.voloridge.com/join-our-team"
+    query: "intern"
+
+  - type: auto
+    name: "XTX Markets"
+    url: "https://www.xtxmarkets.com/career/internships-finance-risk-core-engineering/"
+    query: "intern"
+
+# --- AI-native, fintech, big-tech and Canadian companies, added 2026-08-10 ---
+
+  - type: auto
+    name: "Mistral AI"
+    url: "https://mistral.ai/careers"
+    query: "intern"
+
+  - type: greenhouse
+    name: "Hugging Face"
+    slug: "huggingface"
+
+  - type: greenhouse
+    name: "Weights & Biases"
+    slug: "wandb"
+
+  - type: greenhouse
+    name: "Rippling"
+    slug: "rippling"
+
+  - type: greenhouse
+    name: "Deel"
+    slug: "deel"
+
+  - type: auto
+    name: "Klarna"
+    url: "https://www.klarna.com/careers/"
+    query: "intern"
+
+  - type: auto
+    name: "Visa"
+    url: "https://usa.visa.com/careers/job-search.html"
+    query: "intern"
+
+  - type: auto
+    name: "American Express"
+    url: "https://aexp.eightfold.ai/careers"
+    query: "intern"
+
+  - type: auto
+    name: "Discover Financial Services"
+    url: "https://jobs.discover.com/search-jobs"
+    query: "intern"
+
+  - type: workday
+    name: "Wells Fargo"
+    tenant: "wf"
+    host: "wd1"
+    site: "wellsfargojobs"
+
+  - type: auto
+    name: "Goldman Sachs"
+    url: "https://higher.gs.com/results?"
+    query: "intern"
+
+  - type: auto
+    name: "JPMorgan Chase"
+    url: "https://careers.jpmorgan.com/us/en/students/programs"
+    query: "intern"
+
+  - type: workday
+    name: "Bank of America"
+    tenant: "bankofamerica"
+    host: "wd1"
+    site: "Lateral-US"
+
+  - type: auto
+    name: "Citi"
+    url: "https://jobs.citi.com/students-and-graduates"
+    query: "intern"
+
+  - type: auto
+    name: "Deutsche Bank"
+    url: "https://careers.db.com/students-graduates/"
+    query: "intern"
+
+  - type: auto
+    name: "BlackRock"
+    url: "https://careers.blackrock.com/students"
+    query: "intern"
+
+  - type: auto
+    name: "Vanguard"
+    url: "https://www.vanguardjobs.com/students"
+    query: "intern"
+
+  - type: auto
+    name: "Fidelity Investments"
+    url: "https://jobs.fidelity.com/university/"
+    query: "intern"
+
+  - type: auto
+    name: "State Street"
+    url: "https://careers.statestreet.com/global/en/students-graduates"
+    query: "intern"
+
+  - type: auto
+    name: "T. Rowe Price"
+    url: "https://www.troweprice.com/careers/en/students.html"
+    query: "intern"
+
+  - type: greenhouse
+    name: "Canva"
+    slug: "canva"
+
+  - type: auto
+    name: "Palantir Technologies"
+    url: "https://www.palantir.com/careers/students/"
+    query: "intern"
+
+  - type: auto
+    name: "Unity Technologies"
+    url: "https://careers.unity.com/students"
+    query: "intern"
+
+  - type: workday
+    name: "Electronic Arts"
+    tenant: "ea"
+    host: "wd1"
+    site: "ea_External_Careers"
+
+  - type: greenhouse
+    name: "Zoom"
+    slug: "zoom"
+
+  - type: greenhouse
+    name: "Monday.com"
+    slug: "mondaycom"
+
+  - type: greenhouse
+    name: "HashiCorp"
+    slug: "hashicorp"
+
+  - type: greenhouse
+    name: "Elastic"
+    slug: "elastic"
+
+  - type: auto
+    name: "Wix"
+    url: "https://www.wix.com/jobs/openings"
+    query: "intern"
+
+  - type: auto
+    name: "CGI Group"
+    url: "https://www.cgi.com/en/careers/students-recent-graduates"
+    query: "intern"
+
+  - type: auto
+    name: "OpenText"
+    url: "https://careers.opentext.com/students"
+    query: "intern"
+
+  - type: auto
+    name: "BlackBerry"
+    url: "https://blackberry.wd3.myworkdayjobs.com/Careers"
+    query: "intern"
+
+  - type: workday
+    name: "Kinaxis"
+    tenant: "kinaxis"
+    host: "wd3"
+    site: "Kinaxis_Careers"
+
+  - type: greenhouse
+    name: "Nuvei"
+    slug: "nuvei"
+
+  - type: greenhouse
+    name: "Coveo"
+    slug: "coveo"
+
+  - type: greenhouse
+    name: "ApplyBoard"
+    slug: "applyboard"
+
+  - type: greenhouse
+    name: "Ada"
+    slug: "ada"
