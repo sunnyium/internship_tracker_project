@@ -5202,3 +5202,181 @@ sources:
   - type: greenhouse
     name: "Ada"
     slug: "ada"
+
+# --- Quant trading and hedge funds not on the NUFT list, added 2026-11-15 ---
+# Every URL below is the firm's public careers page, entered without a live
+# check. `auto` sniffs the platform on first run; if one errors or returns 0
+# jobs, scripts/health_check.py will flag it and the URL is the thing to fix.
+
+  - type: auto
+    name: "Wolverine Trading"
+    url: "https://www.wolve.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Radix Trading"
+    url: "https://www.radixtrading.co/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Group One Trading"
+    url: "https://www.grouponetrading.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Vatic Labs"
+    url: "https://www.vaticlabs.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Balyasny Asset Management"
+    url: "https://www.bamfunds.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Hutchin Hill Capital"
+    url: "https://www.hutchinhill.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Qube Research & Technologies"
+    url: "https://www.qube-rt.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Volant Trading"
+    url: "https://www.volanttrading.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Edgestream Partners"
+    url: "https://www.edgestreamlp.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Engineers Gate"
+    url: "https://www.engineersgate.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Graham Capital Management"
+    url: "https://www.grahamcapital.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "TGS Management"
+    url: "https://www.tgsmc.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "XR Trading"
+    url: "https://www.xrtrading.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Allston Trading"
+    url: "https://www.allstontrading.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Valkyrie Trading"
+    url: "https://www.valkyrietrading.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Teza Technologies"
+    url: "https://www.teza.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Walleye Capital"
+    url: "https://www.walleyecapital.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Verition Fund Management"
+    url: "https://www.verition.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Hudson Bay Capital"
+    url: "https://www.hudsonbaycapital.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Jain Global"
+    url: "https://www.jainglobal.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "StoneX"
+    url: "https://www.stonex.com/en/careers/"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Interactive Brokers"
+    url: "https://www.interactivebrokers.com/en/general/about/careers.php"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+# --- Sales & trading desks at banks not listed above, added 2026-11-15 ---
+# Same caveat: unverified careers pages, left to `auto` to identify.
+
+  - type: auto
+    name: "Jefferies"
+    url: "https://www.jefferies.com/careers/"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "BNP Paribas"
+    url: "https://usa.bnpparibas/en/careers/"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Nomura"
+    url: "https://www.nomura.com/americas/careers/"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Mizuho"
+    url: "https://www.mizuhogroup.com/americas/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Societe Generale"
+    url: "https://careers.societegenerale.com/en"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "SMBC"
+    url: "https://www.smbcgroup.com/americas/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Natixis CIB"
+    url: "https://www.natixis.com/en/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Credit Agricole CIB"
+    url: "https://www.ca-cib.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Macquarie"
+    url: "https://www.macquarie.com/us/en/careers.html"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Stifel"
+    url: "https://www.stifel.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Raymond James"
+    url: "https://www.raymondjames.com/careers"    # guess: careers page, platform not yet verified
+    query: "intern"
+
+  - type: auto
+    name: "Desjardins"
+    url: "https://www.desjardins.com/en/careers.html"    # guess: careers page, platform not yet verified
+    query: "intern"
