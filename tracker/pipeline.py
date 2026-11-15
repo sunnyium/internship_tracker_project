@@ -33,6 +33,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 
+import seen_index
 from tracker import classifier, notifiers, sources, state
 from tracker.filters import degree, location, term
 from tracker.sources import rendering
@@ -65,6 +66,15 @@ def matches_keyword(title: str, description: str, keywords: list[str]) -> bool:
     return any(k.lower() in text for k in keywords)
 
 
+def _clearly_abroad(job):
+    """True when the location field or title places this posting outside the
+    US/Canada - its title must not be remembered as "seen" for a domestic
+    posting with the same name."""
+    if location.classify_region(job.get("location", "")) == "OTHER":
+        return True
+    return bool(location.foreign_country_in_title(job.get("title", "")))
+
+
 def process_job(job, cfg, ai_api_key):
     """Returns (should_notify, reason) for a single new job. reason is
     always populated - either why it was flagged relevant, or why it
@@ -77,6 +87,12 @@ def process_job(job, cfg, ai_api_key):
         allowed, region = location.is_allowed(job.get("location", ""), loc_cfg.get("allowed_regions", ["US", "CA"]))
         if not allowed:
             return False, f"Location filter: '{job.get('location', '')}' classified as {region}, not in allowed regions"
+        # Scraped pages leave location empty but often put the place in the
+        # title ("... - 2027 Start Singapore").
+        if region == "UNKNOWN":
+            country = location.foreign_country_in_title(title)
+            if country:
+                return False, f"Location filter: title names {country}"
 
     deg_cfg = cfg.get("degree_filter", {})
     if deg_cfg.get("enabled", True):
@@ -87,7 +103,8 @@ def process_job(job, cfg, ai_api_key):
     term_cfg = cfg.get("term_filter", {})
     if term_cfg.get("enabled", True):
         wrong_term, term_reason = term.is_wrong_term(
-            title, desc, allowed_terms=term_cfg.get("allowed_terms", ["summer"])
+            title, desc, allowed_terms=term_cfg.get("allowed_terms", ["summer"]),
+            allowed_years=term_cfg.get("allowed_years", []),
         )
         if wrong_term:
             return False, term_reason
@@ -236,7 +253,18 @@ def _collect_matches(cfg, ai_api_key, matches):
     # nearly all of them are already known.
     seen_ids = state.all_seen_ids()
     baselined = state.baselined_sources()
+    # Shared with the GitHub half: recognizes a posting already seen under a
+    # different id (another fetch route, another list). See seen_index.py.
+    known = seen_index.SeenIndex.load()
+    try:
+        _process_sources(cfg, ai_api_key, matches, source_cfgs, fetched,
+                         seen_ids, baselined, known, max_age_hours, verbose)
+    finally:
+        known.flush()
 
+
+def _process_sources(cfg, ai_api_key, matches, source_cfgs, fetched,
+                     seen_ids, baselined, known, max_age_hours, verbose):
     for index, source_cfg in enumerate(source_cfgs):
         name = source_cfg.get("name", source_cfg["type"])
         jobs, error = fetched[index]
@@ -255,6 +283,8 @@ def _collect_matches(cfg, ai_api_key, matches):
                 (job["id"], name, job["title"], job["url"]) for job in jobs
             )
             seen_ids.update(job["id"] for job in jobs)
+            for job in jobs:
+                known.add(job, with_text=not _clearly_abroad(job))
             state.mark_baselined(name)
             baselined.add(name)
             print(f"[{name}] First check - recorded {len(jobs)} existing posting(s) as baseline, won't notify for these.")
@@ -262,19 +292,33 @@ def _collect_matches(cfg, ai_api_key, matches):
 
         new_count = 0
         match_count = 0
+        repeat_count = 0
         for job in jobs:
             if job["id"] in seen_ids:
                 continue
             # Mark seen immediately so a crash mid-loop can't cause repeat spam
             state.mark_seen(job["id"], name, job["title"], job["url"])
             seen_ids.add(job["id"])
+            # A new id for a posting already seen some other way.
+            if known.seen_link(job):
+                known.add(job, with_text=False)
+                repeat_count += 1
+                continue
             new_count += 1
 
             try:
                 should_notify, reason = process_job(job, cfg, ai_api_key)
             except Exception as e:
                 print(f"[{name}] Error classifying '{job['title']}': {e}")
+                known.add(job, with_text=False)
                 continue
+
+            if should_notify and known.seen_text(job):
+                known.add(job, with_text=False)
+                repeat_count += 1
+                new_count -= 1
+                continue
+            known.add(job, with_text=not _clearly_abroad(job))
 
             if should_notify:
                 matches.append((job, reason))
@@ -288,8 +332,10 @@ def _collect_matches(cfg, ai_api_key, matches):
         # and a seven-day window across 268 companies makes the per-posting
         # version tens of thousands of lines per round. Rejections are still
         # available by turning verbose_logging on in config.yaml.
-        if new_count:
-            print(f"[{name}] {len(jobs)} posting(s) in window, {new_count} new, {match_count} relevant")
+        known.flush()
+        if new_count or repeat_count:
+            print(f"[{name}] {len(jobs)} posting(s) in window, {new_count} new, {match_count} relevant"
+                  + (f", {repeat_count} already seen elsewhere" if repeat_count else ""))
 
 
 def print_job_counts():

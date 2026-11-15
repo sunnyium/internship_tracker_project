@@ -199,35 +199,24 @@ Two channels, both firing once per round, never once per posting.
 | Found matches | one digest, grouped by repo | one digest, high priority |
 | Found nothing | nothing sent | quiet "round finished" heartbeat, low priority |
 
-Run through `run.py`, the message covers both halves and looks like this:
+Run through `run.py`, the message covers both halves as one list, most
+relevant first (see `ranking.py` and `ranking` in `config/config.yaml`):
 
 ```
-===== Career pages (3) =====
-...
-===== GitHub repos (7) =====
---- Simplify Summer 2027 (4) ---
-...
-===== Duplicates (5) =====
-Data Scientist Intern - Stripe
-Also listed by: Simplify Summer 2027
-Already shown under: Career pages / Stripe
-Link: ...
+Jane Street: Quantitative Trader Intern
+https://...
+
+Stripe: Data Scientist Intern
+https://...
 ```
 
-**Duplicates are the price of fifty overlapping lists.** One Greenhouse posting
+**Repeats are the price of fifty overlapping lists.** One Greenhouse posting
 gets scraped from the company's own careers page, crowdsourced into Simplify,
 mirrored into three smaller lists, and rewritten by jobright behind a tracking
-URL - five notifications for one application. A posting is therefore shown once,
-under the first source that had it, and every repeat is collected into a
-`Duplicates` block at the bottom naming both where it repeated and where the
-kept copy is. Duplicates do not count toward the total in the subject line.
-
-Two things decide sameness, and both are needed. The **URL**, with tracking
-parameters stripped, catches the same link listed twice. **Company, title and
-location together** catch the aggregators that wrap every link in a redirect of
-their own, which can never match on URL. Location is part of that key on
-purpose: the same title at TikTok in San Jose and in Seattle is two
-applications, not one posting listed twice.
+URL. Within a round `dedupe.py` keeps the first copy. Across rounds
+`seen_index.py` remembers every posting either half has examined, by link
+(tracking parameters stripped), by job number, and by company + title, so a job
+that reaches a second list a day later is recognized and not sent again.
 
 First place wins, and order is deliberate: career pages before GitHub lists,
 then GitHub lists in the order `github_boards.yaml` lists them. A link from the

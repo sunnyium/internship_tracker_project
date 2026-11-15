@@ -47,18 +47,8 @@ NTFY_BODY_LIMIT = 3500
 
 
 def _format_job(job, reason=""):
-    lines = [job["title"]]
-    company = job.get("company") or ""
-    # Program lists have one name per row and nothing else - repeating it as a
-    # company line says nothing.
-    if company and company != job["title"]:
-        lines.append(f"Company: {company}")
-    if job.get("location"):
-        lines.append(f"Location: {job['location']}")
-    lines.append(f"Link: {job['url']}")
-    if reason:
-        lines.append(f"Why flagged: {reason}")
-    return "\n".join(lines)
+    # Same two-line shape as the career-page digest.
+    return tracker_notifiers.format_job(job)
 
 
 def format_digest(matches):

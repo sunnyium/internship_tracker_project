@@ -31,10 +31,9 @@
 
 settings:
   # Postings older than this are ignored where the repo publishes a date.
-  # Rows with no parseable date are KEPT - same fail-open rule the rest of the
-  # project runs on. 14 rather than the tracker's 7 because these lists are
-  # curated by hand and an entry can show up days after the job went live.
-  max_posting_age_days: 14
+  # Rows with no parseable date are KEPT, and "not seen before" is what keeps
+  # those from repeating. 1 = the past day, matching the career-page half.
+  max_posting_age_days: 1
 
   # Repos fetched at the same time. Small on purpose: one of these files is
   # 10MB, and all of them come from two hosts (raw.githubusercontent.com and
@@ -51,6 +50,7 @@ settings:
   # and a location and nothing else, so there is no description to fall back
   # on - the list is a little wider than config.yaml's for that reason.
   keywords:
+    - "forward deployed"
     - "data science"
     - "data scientist"
     - "data analyst"
@@ -116,6 +116,8 @@ settings:
   term_filter:
     enabled: true
     allowed_terms: ["summer"]
+    # Same rule as config/config.yaml's term_filter.allowed_years.
+    allowed_years: [2027, 2028]
 
   # Drops postings that state a US-citizenship or security-clearance
   # requirement. Unlike every other filter here this one fails CLOSED, because

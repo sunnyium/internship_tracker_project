@@ -279,10 +279,9 @@ def canonical_url(url: str) -> str:
 def job_id(repo_name: str, url: str, company: str = "", title: str = "") -> str:
     """Stable id for one posting within one repo.
 
-    Keyed on the repo as well as the posting so the same job appearing in
-    Simplify and in the Canadian list is notified once per list. That is
-    intentional: the lists disagree about which roles exist, and a duplicate
-    line costs far less than a suppressed first sighting."""
+    Keyed on the repo as well as the posting, so each list keeps its own
+    record of what it has shown. Whether the job was already seen in another
+    list or on a career page is decided separately, by seen_index.py."""
     key = canonical_url(url) or f"{company}|{title}".lower()
     digest = hashlib.sha1(f"{repo_name}|{key}".encode("utf-8")).hexdigest()
     return f"gh:{digest[:20]}"

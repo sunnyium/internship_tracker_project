@@ -75,6 +75,10 @@ def evaluate(job, repo_cfg, settings):
         )
         if not allowed:
             return False, f"Location filter: '{job.get('location', '')}' classified as {region}"
+        if region == "UNKNOWN":
+            country = location.foreign_country_in_title(title)
+            if country:
+                return False, f"Location filter: title names {country}"
 
     if settings.get("degree_filter", {}).get("enabled", True):
         grad_only, reason = degree.is_grad_only(title, job.get("notes", ""))
@@ -87,6 +91,7 @@ def evaluate(job, repo_cfg, settings):
         wrong_term, reason = term.is_wrong_term(
             title, job.get("notes", ""), job.get("term", ""),
             allowed_terms=settings.get("term_filter", {}).get("allowed_terms", ["summer"]),
+            allowed_years=settings.get("term_filter", {}).get("allowed_years", []),
         )
         if wrong_term:
             return False, reason

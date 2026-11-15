@@ -30,6 +30,7 @@ from datetime import datetime, timedelta, timezone
 
 from github_boards import fetch, notifiers, parse_json, parse_markdown, parse_yaml_dir
 from github_boards import normalize, relevance, state
+from tracker.filters import location
 
 DEFAULT_FETCH_WORKERS = 4
 DEFAULT_MAX_AGE_DAYS = 14
@@ -262,7 +263,26 @@ def _collect_matches(repo_cfgs, settings, matches, dry_run):
 
     seen_ids = state.all_seen_ids()
     baselined = state.baselined_repos()
+    # Shared with the career-page half, and across every list here - the
+    # per-repo ids alone let one job through once per list it appears in.
+    # Imported here rather than at the top: seen_index imports this package.
+    import seen_index
+    known = seen_index.SeenIndex.load(read_only=dry_run)
+    try:
+        _process_repos(repo_cfgs, settings, matches, dry_run, fetched,
+                       seen_ids, baselined, known, max_age_days, verbose)
+    finally:
+        known.flush()
 
+
+def _clearly_abroad(job):
+    if location.classify_region(job.get("location", "")) == "OTHER":
+        return True
+    return bool(location.foreign_country_in_title(job.get("title", "")))
+
+
+def _process_repos(repo_cfgs, settings, matches, dry_run, fetched,
+                   seen_ids, baselined, known, max_age_days, verbose):
     for index, repo_cfg in enumerate(repo_cfgs):
         name = repo_cfg["name"]
         jobs, etag_updates, note, error = fetched[index]
@@ -284,6 +304,8 @@ def _collect_matches(repo_cfgs, settings, matches, dry_run):
                 state.mark_baselined(name)
             baselined.add(name)
             seen_ids.update(j["id"] for j in jobs)
+            for j in jobs:
+                known.add(j, with_text=not _clearly_abroad(j))
             print(f"[{name}] First read ({note}) - recorded {len(jobs)} existing posting(s) "
                   "as baseline, won't notify for these.")
             _store_etags(etag_updates, dry_run)
@@ -291,19 +313,33 @@ def _collect_matches(repo_cfgs, settings, matches, dry_run):
 
         new_count = 0
         match_count = 0
+        repeat_count = 0
         for job in jobs:
             if job["id"] in seen_ids:
                 continue
             if not dry_run:
                 state.mark_seen(job["id"], name, job.get("company", ""), job["title"], job["url"])
             seen_ids.add(job["id"])
-            new_count += 1
+            # Same posting, already seen in another list or on a career page.
+            if known.seen_link(job):
+                known.add(job, with_text=False)
+                repeat_count += 1
+                continue
 
             try:
                 should_notify, reason = relevance.evaluate(job, repo_cfg, settings)
             except Exception as e:
                 print(f"[{name}] Error judging '{job['title']}': {e}")
+                known.add(job, with_text=False)
+                new_count += 1
                 continue
+
+            if should_notify and known.seen_text(job):
+                known.add(job, with_text=False)
+                repeat_count += 1
+                continue
+            known.add(job, with_text=not _clearly_abroad(job))
+            new_count += 1
 
             if should_notify:
                 matches.append((name, job, reason))
@@ -312,8 +348,11 @@ def _collect_matches(repo_cfgs, settings, matches, dry_run):
             elif verbose:
                 print(f"[{name}] Not relevant: {job['title']} ({reason})")
 
+        known.flush()
         print(f"[{name}] {len(jobs)} posting(s) in window, {new_count} new, "
-              f"{match_count} relevant ({note})")
+              f"{match_count} relevant"
+              + (f", {repeat_count} already seen elsewhere" if repeat_count else "")
+              + f" ({note})")
         _store_etags(etag_updates, dry_run)
 
 

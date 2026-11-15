@@ -22,6 +22,7 @@ stop the other from firing.
 """
 
 import os
+import re
 import smtplib
 import ssl
 from collections import namedtuple
@@ -30,17 +31,31 @@ from email.mime.text import MIMEText
 import requests
 
 
-def _format_job(job, reason=""):
-    lines = [
-        f"{job['title']}",
-        f"Company: {job['company']}",
-    ]
-    if job.get("location"):
-        lines.append(f"Location: {job['location']}")
-    lines.append(f"Link: {job['url']}")
-    if reason:
-        lines.append(f"Why flagged: {reason}")
-    return "\n".join(lines)
+# Card text a page scrape picks up along with the title, which says nothing
+# the link doesn't: "... Interim Intern Posted 5 days ago".
+_POSTED_TAIL = re.compile(r"\s*\bposted\s+(?:today|yesterday|\d+\+?\s*days?\s+ago)\b.*$", re.I)
+_SPACES = re.compile(r"\s+")
+
+
+def clean_title(title):
+    return _SPACES.sub(" ", _POSTED_TAIL.sub("", title or "")).strip()
+
+
+def format_job(job, reason=""):
+    """Two lines per posting and nothing else:
+
+        Company: Title
+        https://link
+
+    A program-list row whose "company" is just the title again shows the
+    title once."""
+    title = clean_title(job.get("title", ""))
+    company = (job.get("company") or "").strip()
+    head = f"{company}: {title}" if company and company != title else title
+    return f"{head}\n{job.get('url', '')}"
+
+
+_format_job = format_job
 
 
 def format_digest(matches):
@@ -235,6 +250,39 @@ def _fit_for_push(body):
         kept.append(block)
         used += cost
     return "\n\n".join(kept) + footer
+
+
+def _ranked_subject(jobs):
+    """'5 new internships: Jane Street, Citadel, +3 more' - companies in
+    ranked order, so the subject leads with the best match."""
+    if len(jobs) == 1:
+        job = jobs[0]
+        return f"New internship: {job.get('company') or 'unknown'}: {clean_title(job.get('title', ''))}"
+    companies = []
+    for job in jobs:
+        name = job.get("company") or "unknown"
+        if name not in companies:
+            companies.append(name)
+    shown = ", ".join(companies[:3])
+    if len(companies) > 3:
+        shown += f", +{len(companies) - 3} more"
+    return f"{len(jobs)} new internships: {shown}"
+
+
+def notify_ranked(jobs, notif_cfg):
+    """One message for the round: every posting, best match first, in the
+    two-line format_job shape with a blank line between postings. An empty
+    round sends only the ntfy heartbeat, as before."""
+    if not jobs:
+        send_ntfy_heartbeat(notif_cfg.get("ntfy", {}))
+        return
+    body = "\n\n".join(format_job(job) for job in jobs)
+    subject = _ranked_subject(jobs)
+    email_cfg = notif_cfg.get("email", {})
+    if email_cfg.get("enabled"):
+        _send_email_text(subject, body, email_cfg, len(jobs))
+    if _post_ntfy(notif_cfg.get("ntfy", {}), subject, _fit_for_push(body), "high"):
+        print(f"[ntfy] Sent digest of {len(jobs)} posting(s)")
 
 
 def notify_sections(sections, notif_cfg):

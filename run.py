@@ -13,7 +13,8 @@ One round now covers both halves of the project, in this order:
     1. career pages     ~1,100 companies, 10-15 minutes  (tracker/)
     2. GitHub repos     crowdsourced internship lists     (github_boards/)
 
-and sends ONE message covering both, career-page results first. Two pushes a
+and sends ONE message covering both: a single list, most relevant posting
+first (see ranking.py), each as "Company: Title" and its link. Two pushes a
 minute apart about the same job search would defeat the once-per-round rule
 the notifiers were built around. Either half failing still lets the other
 report - a broken GitHub round does not cost you the career-page digest.
@@ -39,7 +40,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 import dedupe
-from github_boards import notifiers as gh_notifiers
+import ranking
 from github_boards import pipeline as gh_pipeline
 from github_boards import state as gh_state
 from github_boards.config import load_config as load_github_config
@@ -63,7 +64,7 @@ for _stream in (sys.stdout, sys.stderr):
 def _startup_warnings(cfg, ai_api_key):
     if cfg.get("ai_classification", {}).get("enabled") and not ai_api_key:
         print("WARNING: AI double-check is enabled but GROQ_API_KEY is not set.")
-        print("         Non-keyword-matching jobs will be flagged as relevant by default (fail-open).")
+        print("         Postings that miss every keyword will be skipped.")
 
     # Anything that needs a real browser: explicit `type: browser` sources
     # always render; `auto` sources only fall back to rendering when
@@ -107,33 +108,19 @@ def _github_entries(gh_cfg):
             for repo, job, reason in matches]
 
 
-def _build_sections(career, github):
-    """The digest, career pages first, with everything already listed above
-    collected into a Duplicates block at the bottom.
+def _ranked_jobs(career, github, cfg):
+    """Every posting to send, best match first.
 
-    Career entries are handed to the deduplicator first on purpose: the same
-    posting reaches both halves constantly, and a link scraped from the
-    company's own careers page is the one worth opening."""
+    Career entries go in ahead of GitHub ones so that, when both halves found
+    the same posting this round, the company's own link is the copy kept.
+    The repeats are dropped silently."""
     unique, duplicates = dedupe.split_duplicates(career + github)
-
-    career_unique = [e for e in unique if e.section == "Career pages"]
-    github_unique = [e for e in unique if e.section == "GitHub repos"]
-
-    sections = [
-        notifiers.Section("Career pages",
-                          notifiers.format_digest([(e.job, e.reason) for e in career_unique]),
-                          len(career_unique)),
-        notifiers.Section("GitHub repos",
-                          gh_notifiers.format_digest([(e.source, e.job, e.reason) for e in github_unique]),
-                          len(github_unique)),
-    ]
     if duplicates:
-        sections.append(notifiers.Section(
-            "Duplicates", dedupe.format_duplicates(duplicates), len(duplicates), False
-        ))
-        print(f"[dedupe] {len(duplicates)} posting(s) listed by more than one source, "
-              "shown once and recorded under Duplicates")
-    return sections
+        print(f"[dedupe] {len(duplicates)} posting(s) listed by more than one source, sent once")
+    ranked = ranking.rank(unique, cfg)
+    if len(ranked) < len(unique):
+        print(f"[ranking] {len(unique) - len(ranked)} lower-tier posting(s) left out (ranking.send_tiers)")
+    return [e.job for e in ranked]
 
 
 def run_round(cfg, ai_api_key, gh_cfg=None):
@@ -155,12 +142,12 @@ def run_round(cfg, ai_api_key, gh_cfg=None):
             github = _github_entries(gh_cfg)
             completed = completed and github is not None
 
-        sections = _build_sections(career or [], github or [])
-        if not sum(s.count for s in sections if s.in_total):
+        jobs = _ranked_jobs(career or [], github or [], cfg)
+        if not jobs:
             print("No new relevant postings this round.")
-        # One message for the whole round, career pages first. notify_sections
-        # falls back to the ntfy heartbeat when every section is empty.
-        notifiers.notify_sections(sections, cfg["notifications"])
+        # One message for the whole round, most relevant first. An empty round
+        # sends only the ntfy heartbeat.
+        notifiers.notify_ranked(jobs, cfg["notifications"])
         pipeline.print_job_counts()
     except Exception:
         print("Unexpected error during this round:")

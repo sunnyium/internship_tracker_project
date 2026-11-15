@@ -31,19 +31,14 @@ max_fetch_workers: 10
 verbose_logging: false
 
 # Only consider postings from the last N hours. Applies wherever the source
-# gives us a real posting date (Greenhouse, Lever, Workday). Sources that
-# don't expose a date (generic_html) skip this filter rather than risk
-# hiding something we can't actually verify the age of.
+# gives us a real posting date (Greenhouse, Lever, Workday, Amazon, ...).
+# Sources that don't expose a date (page scrapes) skip this filter; for those,
+# "not seen before" (seen_jobs.db + seen_index.db) is what keeps old postings
+# out.
 #
-# 168 = 7 days. Widened from 24h so that a posting isn't missed just because
-# the tracker happened to be stopped the day it went up - with a week-long
-# window, restarting after a few days off still catches everything. The
-# dedupe database, not this number, is what stops repeat notifications, so a
-# wider window costs nothing on an ongoing basis.
-#
-# NOTE: the first round after widening this will be large - every posting
-# from the past week that isn't already in seen_jobs.db counts as new.
-max_posting_age_hours: 168
+# 24 = the past day. If the tracker is stopped for longer than this, postings
+# that went up while it was off are not caught up on.
+max_posting_age_hours: 24
 
 # Keywords checked (case-insensitive) against job title + description.
 # A job is an immediate "relevant" match if ANY of these appear. Tuned for:
@@ -54,6 +49,7 @@ max_posting_age_hours: 168
 # look from the AI double-check below, which is instructed to cast a wide
 # net for the same fields.
 keywords:
+  - "forward deployed"     # FDE roles (Palantir, Anthropic, OpenAI, Scale, ...)
   - "data science"
   - "data scientist"
   - "data analyst"
@@ -137,6 +133,11 @@ term_filter:
   # only counts next to a year ("Fall 2027"), so office locations like
   # "Fall River, MA" or "Winter Park, FL" can't trip this.
   allowed_terms: ["summer"]
+  # Years you're applying for. A posting that names a season next to a year
+  # ("Summer 2026") must name an allowed season in one of these years; one
+  # that names only a bare year in its title ("2026 Start") must name one of
+  # these. No year at all -> kept.
+  allowed_years: [2027, 2028]
 
 # --- Headless-browser rendering (for JavaScript-rendered career pages) ---
 # Some career sites (Tesla, Meta, TikTok, Snap, ...) draw their job list with
@@ -172,6 +173,28 @@ browser_rendering:
 # minutes" becomes "as fast as a full sweep takes". If you want a predictable
 # cadence, raise poll_interval_seconds to 600 (10 min) once you see how long
 # a round actually takes in the logs.
+
+# --- Ranking (order of the digest) ---
+# Every match is placed in the first tier whose words appear in its title
+# (whole words; "quant", "statistic" and "mathemat" also match longer forms).
+# Anything matching no tier is ranked last. The digest lists tier 1 first.
+ranking:
+  tiers:
+    - # 1 - quant, data science, AI/ML, forward deployed
+      ["quant", "quantitative", "trading", "trader", "algorithmic", "market making",
+       "data science", "data scientist",
+       "machine learning", "ml", "ai", "artificial intelligence", "deep learning",
+       "llm", "nlp", "computer vision", "applied scientist", "research scientist",
+       "forward deployed", "fde"]
+    - # 2 - close neighbours
+      ["software engineer", "software engineering", "software developer", "swe",
+       "data engineer", "data analyst", "analytics", "data",
+       "research", "statistic", "mathemat", "algorithm",
+       "cybersecurity", "security", "infrastructure", "backend", "platform"]
+  # Which tiers get sent. Tier 3 is "passed every filter but matches neither
+  # list above" (general analyst, finance, other engineering). Set to [1, 2]
+  # to drop it, or [1] for target lanes only.
+  send_tiers: [1, 2, 3]
 
 # --- Sources to scrape ---
 # The actual company list lives in companies.yaml, not here - keeps this

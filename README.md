@@ -12,9 +12,9 @@ One round now covers two kinds of source:
    underclassmen lists). See [docs/GITHUB_BOARDS.md](docs/GITHUB_BOARDS.md).
 
 Both run inside `run.py`, so `run_once.bat` and the scheduled task cover both,
-and both land in **one** email and **one** push per round — career-page results
-first, GitHub results second, and anything found in more than one place shown
-once with the repeats listed under `Duplicates` at the bottom.
+and both land in **one** email and **one** push per round: a single list,
+most relevant posting first, with anything found in more than one place shown
+once.
 
 ## How it decides "relevant"
 
@@ -29,21 +29,27 @@ those fields** - and only in the **US and Canada**.
    confidently classified, the posting is **kept** - per your preference for
    excess notifications over missed opportunities. See `location_filter` in
    `config/config.yaml` to adjust allowed regions or disable this entirely.
-2. **Degree filter** — postings explicitly aimed only at Masters/PhD
+   When the location field is empty (page scrapes never fill it), a title
+   that names another country ("... - 2027 Start Singapore") is dropped too.
+2. **Term filter** — only Summer, and only the years in
+   `term_filter.allowed_years` (2027 and 2028). "Fall 2027" and "Summer 2026"
+   are dropped; a title that names no season or year is kept.
+3. **Degree filter** — postings explicitly aimed only at Masters/PhD
    students ("PhD Intern", "must be enrolled in a PhD program") are dropped.
    Postings that mention grad degrees alongside Bachelor's-eligibility
    ("BS/MS"), soften the requirement ("PhD preferred"), or don't specify a
    level at all are **kept** - when unsure, it lets the posting through.
-3. Title must look like an internship (`intern`, `internship`, `co-op`,
+4. Title must look like an internship (`intern`, `internship`, `co-op`,
    `student researcher`).
-4. **Keyword pass** — if the title/description contains any of your keywords
+5. **Keyword pass** — if the title/description contains any of your keywords
    (edit the list in `config/config.yaml`), it's flagged immediately, no AI call needed.
-5. **AI double-check** — anything that passed step 3 but missed every keyword
+6. **AI double-check** — anything that passed step 4 but missed every keyword
    (e.g. "Operations Research Intern" doesn't literally contain "math" or
    "analyst") gets sent to a free LLM (via [Groq](https://groq.com), no
    credit card required) to judge, instructed to cast a wide net across your
-   fields of study and interests. It's instructed to say yes when in doubt,
-   since a false positive just costs you one extra email.
+   fields of study and interests. If the check can't run (no `GROQ_API_KEY`,
+   a network error, or a retired model, which Groq answers with a 404), the
+   posting is **skipped**, not sent, and the log says why once per round.
 
 ## Only new postings trigger a notification
 
@@ -56,7 +62,16 @@ the last check) get notified. This baseline is remembered in
 so stopping and restarting the program later won't cause re-notifications
 for things you've already seen — only truly new postings fire an alert.
 
-On top of that, `max_posting_age_hours` in `config/config.yaml` (default 24) filters
+"Seen before" is checked across **both** halves and every source, in
+`data/seen_index.db` (`seen_index.py`). A posting counts as already seen if
+its link (tracking parameters stripped), its job number, or its company and
+title were seen anywhere before. That catches the same job reappearing in
+another GitHub list, on the company's own page after a list carried it, or
+under a different id because a career page answered through its API one round
+and a page scrape the next. The company + title match expires after 180 days,
+so next year's identically named posting still counts as new.
+
+On top of that, `max_posting_age_hours` in `config/config.yaml` (24, the past day) filters
 out anything older than that, based on the actual posting date where the
 platform provides one:
 
@@ -254,24 +269,26 @@ only — they are not what gets sent.
 | Found matches | one digest listing all of them | one digest, high priority |
 | Found nothing | **nothing sent** | quiet "round finished" heartbeat, low priority |
 
-The digest is split into sections, career pages first:
+The digest is one list, most relevant first, two lines per posting:
 
 ```
-===== Career pages (3) =====      what the ~1,100 scrapers found
-===== GitHub repos (7) =====      what the 51 GitHub lists found, grouped by list
-===== Duplicates (5) =====        postings that appeared in more than one place
+Jane Street: Quantitative Trader Intern
+https://boards.greenhouse.io/janestreet/jobs/...
+
+Palantir: Forward Deployed Engineer Intern
+https://jobs.ashbyhq.com/palantir/...
 ```
 
-**Duplicates.** The same Greenhouse posting routinely appears on the company's
-own careers page, in Simplify, in three smaller lists, and again behind a
-jobright tracking URL. It is shown **once**, under the first source that had it,
-and the repeats go in a block at the bottom naming where each one came from and
-where the copy that was kept is. Career pages are checked first, so the link you
-get is the company's own. Duplicates don't count toward the total in the
-subject line. Matching is by URL (tracking parameters stripped) and by
-company + title + location, so an aggregator that hides the real link behind a
-redirect is still caught, while the same title in two different cities stays two
-postings.
+**Order.** `ranking.py` puts each posting in the first tier whose words appear
+in its title: tier 1 is quant, data science, AI/ML and forward-deployed roles,
+tier 2 is software, data engineering/analytics, research and security, and
+tier 3 is everything else that passed the filters. Edit the words under
+`ranking.tiers` in `config/config.yaml`, and set `ranking.send_tiers` to
+`[1, 2]` to stop sending tier 3 at all.
+
+**Duplicates.** The same posting found by several sources in one round is
+listed once; career pages are checked first, so the link you get is the
+company's own.
 
 - **Email** — SMTP via Gmail. Address, recipient, and app password come from
   `.env` (`EMAIL_FROM_ADDRESS`, `EMAIL_TO_ADDRESS`, `EMAIL_APP_PASSWORD`), not

@@ -1,6 +1,7 @@
 """
 Term/season filter: excludes postings explicitly naming a cycle Sunny isn't
-targeting (Fall, Winter, Spring), keeps everything else.
+targeting - a season other than Summer, or a year other than the allowed ones
+(2027 and 2028) - and keeps everything else.
 
 Design principles (matching the tracker's overall fail-open philosophy):
 - Only exclude when a season is EXPLICITLY named and none of the seasons
@@ -60,16 +61,56 @@ def _seasons_in(text, structured):
     return found
 
 
-def is_wrong_term(title, description="", term_field="", allowed_terms=("summer",)):
+# A bare year in a title or a structured term field ("2026 Start", "Intern
+# 2026"). Not applied to descriptions, where copyright lines and founding dates
+# would trip it.
+BARE_YEAR_PATTERN = re.compile(r"(?<![\w/-])(20\d{2})(?![\w/-])")
+
+
+def _season_year_pairs(text):
+    """{(season, year)} for every season-next-to-year mention in `text`."""
+    pairs = set()
+    for match in SEASON_YEAR_PATTERN.finditer(text or ""):
+        chain_a, year_a, year_b, chain_b = match.groups()
+        chain, year = (chain_a, year_a) if chain_a else (chain_b, year_b)
+        for token in _TOKEN_SPLIT.split(chain.lower()):
+            if token in SEASON_ALIASES:
+                pairs.add((SEASON_ALIASES[token], int(year)))
+    return pairs
+
+
+def is_wrong_term(title, description="", term_field="", allowed_terms=("summer",), allowed_years=()):
     """Returns (wrong_term: bool, reason: str). True means the posting
-    explicitly targets a cycle outside `allowed_terms` and should be
-    excluded. Nothing identifiable, or an allowed season among what's
-    named, returns False (keep) - fail-open, same as every filter here."""
+    explicitly targets a cycle outside `allowed_terms` (and, when
+    `allowed_years` is given, outside those years) and should be excluded.
+
+    Seasons: a posting naming no season is kept; one naming several is kept
+    if any is allowed.
+
+    Years: when a season is named next to a year ("Summer 2026"), at least
+    one such pair must be an allowed season in an allowed year. Otherwise a
+    bare year in the title or term field ("2026 Start", "Intern 2026") must
+    include an allowed year. No year anywhere -> kept."""
     allowed = {t.lower() for t in allowed_terms}
     found = _seasons_in(term_field, structured=True)
     found |= _seasons_in(title, structured=False)
     found |= _seasons_in(description, structured=False)
 
-    if not found or found & allowed:
+    if found and not found & allowed:
+        return True, f"Term filter: names {'/'.join(sorted(found))}, not {'/'.join(sorted(allowed))}"
+
+    years = {int(y) for y in allowed_years}
+    if not years:
         return False, ""
-    return True, f"Term filter: names {'/'.join(sorted(found))}, not {'/'.join(sorted(allowed))}"
+
+    pairs = _season_year_pairs(title) | _season_year_pairs(term_field) | _season_year_pairs(description)
+    if pairs:
+        if any(season in allowed and year in years for season, year in pairs):
+            return False, ""
+        named = ", ".join(f"{s.title()} {y}" for s, y in sorted(pairs, key=lambda p: (p[1], p[0])))
+        return True, f"Term filter: names {named}, not {'/'.join(sorted(allowed))} {'/'.join(map(str, sorted(years)))}"
+
+    bare = {int(y) for y in BARE_YEAR_PATTERN.findall(f"{title} {term_field}")}
+    if bare and not bare & years:
+        return True, f"Term filter: names {'/'.join(map(str, sorted(bare)))}, not {'/'.join(map(str, sorted(years)))}"
+    return False, ""

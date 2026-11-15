@@ -124,3 +124,23 @@ def is_allowed(location_text, allowed_regions):
     if region == "UNKNOWN":
         return True, region
     return region in allowed_regions, region
+
+
+def foreign_country_in_title(title):
+    """The non-US/Canada country a title names, or "" if none.
+
+    For postings whose location field is empty - the heuristic page scrape
+    never fills it - but whose title carries the place anyway: "... - 2027
+    Start Singapore", "6 months, Cambridge, United Kingdom". Only country
+    names count here, not region words like "International", which appear
+    in plenty of US job titles ("International Finance Intern"). A title that
+    also names a US or Canadian place is left alone."""
+    if not title:
+        return ""
+    if classify_region(title) in ("US", "CA"):
+        return ""
+    lower = f" {title.lower()} "
+    for phrase in OTHER_COUNTRY_SIGNAL_PHRASES:
+        if re.search(rf"\b{re.escape(phrase.strip())}\b", lower):
+            return phrase.strip()
+    return ""
