@@ -69,6 +69,16 @@ OTHER_COUNTRY_SIGNAL_PHRASES = [
     "croatia", "slovakia", "slovenia", "bulgaria", "cyprus", "malta",
 ]
 
+# ISO 3166 alpha-3 codes for the countries above that postings use most.
+OTHER_COUNTRY_CODES = {
+    "DEU", "GBR", "IND", "CHN", "JPN", "SGP", "FRA", "IRL", "ISR", "POL",
+    "ESP", "ITA", "NLD", "AUS", "BRA", "MEX", "KOR", "TWN", "HKG", "ROU",
+    "CZE", "CHE", "SWE", "NOR", "DNK", "FIN", "BEL", "AUT", "PRT", "GRC",
+    "HUN", "ARG", "CHL", "COL", "PER", "CRI", "PHL", "MYS", "THA", "VNM",
+    "IDN", "NZL", "ZAF", "ARE", "SAU", "TUR", "EGY", "NGA", "KEN", "PAK",
+    "LUX", "EST", "LVA", "LTU", "SRB", "HRV", "SVK", "SVN", "BGR", "UKR",
+}
+
 # Region and remote-scope phrases that mean "not US/Canada" without naming a
 # specific country - a job board's own shorthand for "everywhere but here".
 OTHER_REGION_SIGNAL_PHRASES = [
@@ -104,6 +114,16 @@ def classify_region(location_text):
         return "US"
     if tokens & CANADA_PROVINCE_ABBR:
         return "CA"
+
+    # Three-letter country codes, as Amazon writes them ("Munich, Bavaria,
+    # DEU", "Seattle, WA, USA"). Uppercase whole words only.
+    codes = set(re.findall(r"\b[A-Z]{3}\b", text))
+    if codes & {"USA"}:
+        return "US"
+    if codes & {"CAN"}:
+        return "CA"
+    if codes & OTHER_COUNTRY_CODES:
+        return "OTHER"
 
     if any(p in lower for p in OTHER_COUNTRY_SIGNAL_PHRASES):
         return "OTHER"
