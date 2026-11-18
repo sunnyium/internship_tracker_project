@@ -360,6 +360,39 @@ repos:
     require_internship_title: false
     keyword_match: false
 
+  # Added 2026-11-18. Each was read with the tracker's own parser before being
+  # added; row counts are from that read.
+  - name: "Quant Scraper 2027"
+    repo: "quant-scraper/Quant-Internships-New-Grad-2027"
+    strategy: markdown
+    paths: ["README.md"]
+    # 720 rows across 50+ trading firms, all quant/trading or SWE at a trading
+    # firm, so no keyword is required. The internship-title check still drops
+    # the new-grad rows.
+    keyword_match: false
+
+  - name: "TrakkerHQ Quant"
+    repo: "TrakkerHQ/quant-jobs"
+    strategy: markdown
+    paths: ["README.md"]
+    # ~30 rows, quant research/trading only.
+    keyword_match: false
+
+  - name: "Quant Internships 2027 (jordan-belfort-ai)"
+    repo: "jordan-belfort-ai/Quant-Internships-2027"
+    strategy: markdown
+    # README rather than jobs.json: the README rows carry posting dates.
+    paths: ["README.md"]
+    # 630 rows; mostly trading firms and hedge funds but also bank and
+    # consulting roles, so keywords stay on.
+
+  - name: "Canadian Finance 2027"
+    repo: "coawp-com/Canadian-Finance-Internships-2027"
+    strategy: markdown
+    paths: ["README.md"]
+    # 211 rows: Canadian banks' markets, trading, investments and actuarial
+    # internships. Broad, so keywords stay on.
+
   # ===========================================================================
   # 3. Canada - a specific plus in the profile, not a fallback
   # ===========================================================================

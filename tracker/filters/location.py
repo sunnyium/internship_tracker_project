@@ -79,6 +79,33 @@ OTHER_COUNTRY_CODES = {
     "LUX", "EST", "LVA", "LTU", "SRB", "HRV", "SVK", "SVN", "BGR", "UKR",
 }
 
+# ISO two-letter codes, minus every one that is also a US state or Canadian
+# province code (IN, DE, IL, CA, ...) - those are classified above as US/CA.
+OTHER_COUNTRY_ABBR = {
+    "GB", "NL", "AU", "SG", "HK", "CN", "JP", "FR", "IE", "CH", "SE", "NO",
+    "DK", "FI", "BE", "AT", "PT", "ES", "IT", "PL", "CZ", "RO", "HU", "KR",
+    "TW", "NZ", "AE", "BR", "MX", "IS", "LU", "EE", "LT", "LV", "HR", "BG",
+    "TR", "ZA", "MY", "TH", "VN", "PH", "ID", "CY", "MT", "GR", "UA", "RS",
+}
+
+# Cities that postings name without a country. Finance and tech hubs only;
+# names shared with a well-known US or Canadian city are left out unless the
+# US/CA checks above always catch that city first (they need its state or
+# province beside it, which these lists include when it is the US one).
+OTHER_CITY_NAMES = [
+    "london", "amsterdam", "rotterdam", "utrecht", "sydney", "melbourne", "brisbane",
+    "tel aviv", "herzliya", "haifa", "jerusalem", "paris", "dublin", "zurich", "zug",
+    "geneva", "frankfurt", "munich", "berlin", "hamburg", "milan", "madrid",
+    "barcelona", "lisbon", "stockholm", "copenhagen", "oslo", "helsinki", "brussels",
+    "warsaw", "krakow", "prague", "bucharest", "budapest", "limassol", "vienna",
+    "edinburgh", "manchester", "tokyo", "osaka", "seoul", "taipei", "shanghai",
+    "beijing", "shenzhen", "hangzhou", "mumbai", "bangalore", "bengaluru",
+    "gurgaon", "gurugram", "hyderabad", "pune", "chennai", "noida", "delhi",
+    "dubai", "abu dhabi", "doha", "riyadh", "sao paulo", "são paulo",
+    "mexico city", "bogota", "buenos aires", "auckland", "kuala lumpur",
+    "bangkok", "jakarta", "manila", "ho chi minh",
+]
+
 # Region and remote-scope phrases that mean "not US/Canada" without naming a
 # specific country - a job board's own shorthand for "everywhere but here".
 OTHER_REGION_SIGNAL_PHRASES = [
@@ -126,6 +153,16 @@ def classify_region(location_text):
         return "OTHER"
 
     if any(p in lower for p in OTHER_COUNTRY_SIGNAL_PHRASES):
+        return "OTHER"
+
+    # Two-letter country codes ("London, GB") and finance-hub city names with
+    # no country attached ("Amsterdam", "Tel Aviv"), which the global quant
+    # lists use constantly. Both run only after every US/Canada check above
+    # has failed, so "London, ON", "Paris, TX" and "Melbourne, FL" are
+    # already classified by then.
+    if tokens & OTHER_COUNTRY_ABBR:
+        return "OTHER"
+    if any(re.search(rf"\b{re.escape(city)}\b", lower) for city in OTHER_CITY_NAMES):
         return "OTHER"
     if any(p in lower for p in OTHER_REGION_SIGNAL_PHRASES):
         return "OTHER"

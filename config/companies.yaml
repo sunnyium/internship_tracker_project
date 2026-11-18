@@ -4902,10 +4902,9 @@ sources:
     url: "https://drw.com/work-at-drw/category/campus"
     query: "intern"
 
-  - type: auto
+  - type: greenhouse
     name: "Five Rings"
-    url: "https://fiverings.com/careers"
-    query: "intern"
+    slug: "fiveringsllc"    # from-list: board taken from a live posting link in a quant GitHub list, 2026-11-18; was type: auto
 
   - type: auto
     name: "G-Research"
@@ -4917,19 +4916,17 @@ sources:
     url: "https://www.genevatrading.com/careers-open-positions/"
     query: "intern"
 
-  - type: auto
+  - type: greenhouse
     name: "GSA Capital"
-    url: "https://www.gsacapital.com/?section=careers"
-    query: "intern"
+    slug: "gsacapital"    # from-list: board taken from a live posting link in a quant GitHub list, 2026-11-18; was type: auto
 
   - type: lever
     name: "HAP Capital"
     slug: "hap-capital"
 
-  - type: auto
+  - type: greenhouse
     name: "Headlands Technologies"
-    url: "https://www.headlandstech.com/careers/"
-    query: "intern"
+    slug: "headlandstechnologiesllc"    # from-list: board taken from a live posting link in a quant GitHub list, 2026-11-18; was type: auto
 
   - type: auto
     name: "Hudson River Trading"
@@ -4991,10 +4988,9 @@ sources:
     url: "https://www.tower-research.com/open-positions"
     query: "intern"
 
-  - type: auto
+  - type: greenhouse
     name: "TransMarket Group"
-    url: "https://www.transmarketgroup.com/careers"
-    query: "intern"
+    slug: "transmarketgroup"    # from-list: board taken from a live posting link in a quant GitHub list, 2026-11-18; was type: auto
 
   - type: auto
     name: "TrexQuant"
@@ -5015,10 +5011,9 @@ sources:
     url: "https://voleon.com/jobs/"
     query: "intern"
 
-  - type: auto
+  - type: greenhouse
     name: "Voloridge"
-    url: "https://www.voloridge.com/join-our-team"
-    query: "intern"
+    slug: "voloridgeinvestmentmanagement"    # from-list: board taken from a live posting link in a quant GitHub list, 2026-11-18; was type: auto
 
   - type: auto
     name: "XTX Markets"
@@ -5288,10 +5283,9 @@ sources:
     url: "https://www.teza.com/careers"    # guess: careers page, platform not yet verified
     query: "intern"
 
-  - type: auto
+  - type: greenhouse
     name: "Walleye Capital"
-    url: "https://www.walleyecapital.com/careers"    # guess: careers page, platform not yet verified
-    query: "intern"
+    slug: "walleyecapital-external-students"    # from-list: board taken from a live posting link in a quant GitHub list, 2026-11-18; was type: auto
 
   - type: auto
     name: "Verition Fund Management"
@@ -5380,3 +5374,125 @@ sources:
     name: "Desjardins"
     url: "https://www.desjardins.com/en/careers.html"    # guess: careers page, platform not yet verified
     query: "intern"
+
+# --- Quant, trading and asset-management boards found in quant GitHub lists, added 2026-11-18 ---
+# Each board name comes from a live posting link in quant-scraper, TrakkerHQ,
+# jordan-belfort-ai or NUFT on 2026-11-18, so the platform and slug are facts
+# rather than guesses. Firms with no US/Canada office in those lists (London-,
+# Amsterdam- and Asia-only shops) were left out.
+
+  - type: greenhouse
+    name: "Graviton Research Capital"
+    slug: "gravitonresearchcapital"
+
+  - type: greenhouse
+    name: "Eclipse Trading"
+    slug: "eclipsetrading"
+
+  - type: greenhouse
+    name: "Gelber Group"
+    slug: "gelbergroup"
+
+  - type: greenhouse
+    name: "Gelber Group (campus)"
+    slug: "gelberhandshake"
+
+  - type: greenhouse
+    name: "DV Trading"
+    slug: "dvtrading"
+
+  - type: greenhouse
+    name: "Chicago Trading Company (campus)"
+    slug: "ctccampusboard"
+
+  - type: greenhouse
+    name: "Chicago Trading Company (campus 2)"
+    slug: "chicagotradingcampus"
+
+  - type: greenhouse
+    name: "Seven Research"
+    slug: "sevenresearch"
+
+  - type: greenhouse
+    name: "Capstone Investment Advisors"
+    slug: "capstoneinvestmentadvisors"
+
+  - type: greenhouse
+    name: "AXQ Capital"
+    slug: "axq"
+
+  - type: greenhouse
+    name: "Garda Capital Partners"
+    slug: "gardacp"
+
+  - type: greenhouse
+    name: "SESCO Enterprises"
+    slug: "sesco"
+
+  - type: ashby
+    name: "Old Mission (Ashby board)"
+    slug: "old-mission-capital"
+
+  - type: ashby
+    name: "Talos"
+    slug: "Talos-Trading"
+
+  - type: ashby
+    name: "Anthelion Capital"
+    slug: "anthelioncap"
+
+  - type: ashby
+    name: "Deeter Analytics"
+    slug: "deeter-analytics"
+
+  - type: ashby
+    name: "Scientech Research"
+    slug: "scientech-research"
+
+  - type: workday
+    name: "Brevan Howard"
+    tenant: "brevanhoward"
+    host: "wd3"
+    site: "BH_ExternalCareers"
+
+  - type: workday
+    name: "American Century Investments"
+    tenant: "americancentury"
+    host: "wd5"
+    site: "AmericanCenturyInvestments"
+
+  - type: workday
+    name: "Invesco"
+    tenant: "invesco"
+    host: "wd1"
+    site: "IVZ"
+
+  - type: workday
+    name: "Franklin Templeton"
+    tenant: "franklintempleton"
+    host: "wd5"
+    site: "Primary-External-1"
+
+  - type: workday
+    name: "Clearwater Analytics"
+    tenant: "clearwateranalytics"
+    host: "wd1"
+    site: "Clearwater_Analytics_Careers"
+
+  - type: workday
+    name: "Freddie Mac"
+    tenant: "freddiemac"
+    host: "wd5"
+    site: "External"
+
+  - type: workday
+    name: "USAA"
+    tenant: "usaa"
+    host: "wd1"
+    site: "USAAJOBSWD"
+
+  - type: workday
+    name: "KeyBank"
+    tenant: "keybank"
+    host: "wd5"
+    site: "External_Career_Site"
